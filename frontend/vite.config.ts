@@ -21,6 +21,12 @@ const runLocaleScripts = () => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+	// Some deps expect a Node-style `global`. This used to be an inline <script>
+	// in index.html, which meant the CSP had to allow inline scripts; defining it
+	// at build time lets script-src stay 'self'.
+	define: {
+		global: "globalThis",
+	},
 	plugins: [
 		{
 			name: 'run-on-start',

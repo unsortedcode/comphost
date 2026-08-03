@@ -5,6 +5,7 @@ import composerize from "composerize/dist/composerize.js";
 import express from "express";
 import internalBackup from "../internal/backup.js";
 import internalStack from "../internal/stack.js";
+import { issueTicket } from "../lib/ws/ticket.js";
 import errs from "../lib/error.js";
 import jwtdecode from "../lib/express/jwt-decode.js";
 import validator from "../lib/validator/index.js";
@@ -425,6 +426,46 @@ router
 				req.body,
 			);
 			res.status(200).send(await internalStack.setEnv(res.locals.access, parseId(req.params.stack_id), payload));
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
+ * POST /api/stacks/123/terminal-ticket — mint a single-use ticket for the
+ * terminal WebSocket. Authorisation happens here, over normal authenticated
+ * REST, so the session JWT never has to travel in a WebSocket URL.
+ */
+router
+	.route("/:stack_id/terminal-ticket")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+	.post(async (req, res, next) => {
+		try {
+			const payload = await validator(
+				{
+					additionalProperties: false,
+					required: ["service"],
+					properties: {
+						service: { type: "string", minLength: 1, maxLength: 255 },
+						shell: { type: "string", enum: ["sh", "bash"] },
+					},
+				},
+				req.body,
+			);
+			const id = parseId(req.params.stack_id);
+			// Throws unless the caller may open a shell in this stack; also gives us
+			// the resolved compose dir, so the socket handler needs no further lookup.
+			const target = await internalStack.execTarget(res.locals.access, id, payload.service);
+			const { ticket, expiresIn } = issueTicket({
+				service: payload.service,
+				shell: payload.shell || "sh",
+				target,
+			});
+			res.status(201).send({ ticket, expiresIn });
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
 			next(err);

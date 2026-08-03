@@ -28,3 +28,24 @@ elif [ -f "$PRODFILE.template" ]; then
 		log_fatal "Failed to generate ${PRODFILE} from template"
 	fi
 fi
+
+# Security headers for the admin interface. X_FRAME_OPTIONS is an upstream knob,
+# so the CSP frame-ancestors directive is derived from it rather than hardcoded —
+# otherwise the two would disagree and the stricter one would silently win.
+X_FRAME_OPTIONS="${X_FRAME_OPTIONS:-DENY}"
+case "$X_FRAME_OPTIONS" in
+	[Dd][Ee][Nn][Yy])             CSP_FRAME_ANCESTORS="'none'" ;;
+	[Ss][Aa][Mm][Ee][Oo][Rr][Ii][Gg][Ii][Nn]) CSP_FRAME_ANCESTORS="'self'" ;;
+	*)                            CSP_FRAME_ANCESTORS="${X_FRAME_OPTIONS#*[Ff][Rr][Oo][Mm] }" ;;
+esac
+
+SECFILE="/etc/nginx/conf.d/include/admin-security.conf"
+if is_mounted "$SECFILE"; then
+	echo "WARNING: skipping ${SECFILE} — mounted file" >&2
+elif [ -f "$SECFILE.template" ]; then
+	if sed -e "s|{{X_FRAME_OPTIONS}}|${X_FRAME_OPTIONS}|g" 	       -e "s|{{CSP_FRAME_ANCESTORS}}|${CSP_FRAME_ANCESTORS}|g" 	       "$SECFILE.template" > "$SECFILE" && [ -s "$SECFILE" ]; then
+		log_info "Generated ${SECFILE} from template"
+	else
+		log_fatal "Failed to generate ${SECFILE} from template"
+	fi
+fi

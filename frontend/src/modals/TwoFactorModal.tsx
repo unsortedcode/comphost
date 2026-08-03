@@ -1,15 +1,10 @@
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { Field, Form, Formik } from "formik";
+import QRCode from "qrcode";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-import {
-	disable2FA,
-	enable2FA,
-	get2FAStatus,
-	regenerateBackupCodes,
-	start2FASetup,
-} from "src/api/backend";
+import { disable2FA, enable2FA, get2FAStatus, regenerateBackupCodes, start2FASetup } from "src/api/backend";
 import { Button } from "src/components";
 import { T } from "src/locale";
 import { validateString } from "src/modules/Validations";
@@ -31,7 +26,25 @@ const TwoFactorModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const [backupCodesRemaining, setBackupCodesRemaining] = useState(0);
 	const [setupData, setSetupData] = useState<{ secret: string; otpauthUrl: string } | null>(null);
 	const [backupCodes, setBackupCodes] = useState<string[]>([]);
+	// Rendered in the browser on purpose. The otpauth URL contains the TOTP
+	// shared secret, so handing it to a remote QR service would disclose the
+	// second factor to a third party and put it in their logs.
+	const [qrDataUrl, setQrDataUrl] = useState<string>("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	useEffect(() => {
+		if (!setupData?.otpauthUrl) {
+			setQrDataUrl("");
+			return;
+		}
+		let alive = true;
+		QRCode.toDataURL(setupData.otpauthUrl, { width: 200, margin: 1 })
+			.then((url) => alive && setQrDataUrl(url))
+			.catch(() => alive && setQrDataUrl(""));
+		return () => {
+			alive = false;
+		};
+	}, [setupData?.otpauthUrl]);
 
 	const loadStatus = useCallback(async () => {
 		try {
@@ -137,12 +150,7 @@ const TwoFactorModal = EasyModal.create(({ id, visible, remove }: Props) => {
 						)}
 					</div>
 					{!isEnabled ? (
-						<Button
-							fullWidth
-							color="azure"
-							onClick={handleStartSetup}
-							isLoading={isSubmitting}
-						>
+						<Button fullWidth color="azure" onClick={handleStartSetup} isLoading={isSubmitting}>
 							<T id="2fa.enable" />
 						</Button>
 					) : (
@@ -166,12 +174,11 @@ const TwoFactorModal = EasyModal.create(({ id, visible, remove }: Props) => {
 						<T id="2fa.setup-instructions" />
 					</p>
 					<div className="text-center mb-3">
-						<img
-							src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.otpauthUrl)}`}
-							alt="QR Code"
-							className="img-fluid"
-							style={{ maxWidth: "200px" }}
-						/>
+						{qrDataUrl ? (
+							<img src={qrDataUrl} alt="QR Code" className="img-fluid" style={{ maxWidth: "200px" }} />
+						) : (
+							<div style={{ height: 200 }} />
+						)}
 					</div>
 					<label className="mb-3 d-block">
 						<span className="form-label small text-muted">

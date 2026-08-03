@@ -2,6 +2,7 @@ import type { Terminal } from "@xterm/xterm";
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { useEffect, useRef, useState } from "react";
 import Modal from "react-bootstrap/Modal";
+import { createTerminalTicket } from "src/api/backend";
 import { Button } from "src/components";
 import { Xterm } from "src/components/Xterm/Xterm";
 import { useStack } from "src/hooks";
@@ -55,17 +56,25 @@ const StackConsoleModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		termRef.current = term;
 	};
 
-	const connect = () => {
+	const connect = async () => {
 		const term = termRef.current;
 		if (!term || !service) return;
 		disconnect();
 		term.clear();
 
+		// Spend the session token on a REST call and put the single-use ticket it
+		// returns in the socket URL instead — a URL ends up in access logs and
+		// browser history, and this credential opens a shell in the container.
+		let ticket: string;
+		try {
+			ticket = (await createTerminalTicket(id, service, shell)).ticket;
+		} catch (e: any) {
+			term.writeln(`\r\n\x1b[31m[${e?.message || "could not start a session"}]\x1b[0m`);
+			return;
+		}
+
 		const proto = window.location.protocol === "https:" ? "wss" : "ws";
-		const token = AuthStore.token?.token || "";
-		const url = `${proto}://${window.location.host}/api/stacks/terminal?token=${encodeURIComponent(
-			token,
-		)}&stack=${id}&service=${encodeURIComponent(service)}&shell=${encodeURIComponent(shell)}`;
+		const url = `${proto}://${window.location.host}/api/stacks/terminal?ticket=${encodeURIComponent(ticket)}`;
 
 		const ws = new WebSocket(url);
 		wsRef.current = ws;
@@ -78,7 +87,9 @@ const StackConsoleModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		ws.onerror = () => term.writeln("\r\n\x1b[31m[connection error]\x1b[0m");
 
 		term.onData((data) => ws.readyState === ws.OPEN && ws.send(JSON.stringify({ type: "input", data })));
-		term.onResize(({ cols, rows }) => ws.readyState === ws.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
+		term.onResize(
+			({ cols, rows }) => ws.readyState === ws.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })),
+		);
 	};
 
 	const close = () => {

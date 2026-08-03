@@ -1,10 +1,13 @@
 // WebSocket endpoint for interactive stack terminals (container exec).
 // Clients connect to /api/stacks/terminal; nginx strips the /api prefix (proxy_pass
 // with a trailing slash), so the backend listens on /stacks/terminal.
-// Query: ?token=<jwt>&stack=<id>&service=<name>&shell=<sh|bash>
+// Query: ?ticket=<opaque>
 //
-// Browser WebSocket cannot set an Authorization header, so the JWT is passed as a
-// query param and verified here via the same Access/Token machinery as REST.
+// A browser WebSocket cannot set an Authorization header, so the credential has
+// to be in the URL — where nginx logs it, the browser keeps it in history, and
+// it can leak via Referer. The session JWT therefore never appears here. The
+// client first POSTs to /api/stacks/:id/terminal-ticket (authenticated the
+// normal way), and spends the single-use, 30-second ticket it gets back.
 //
 // Wire protocol:
 //   client -> server: JSON { type: "input", data } | { type: "resize", cols, rows }
@@ -12,10 +15,9 @@
 
 import { WebSocketServer } from "ws";
 import { express as logger } from "../../logger.js";
-import Access from "../access.js";
 import orchestrator from "../compose/orchestrator.js";
 import { PtyTerminal } from "../compose/terminal.js";
-import internalStack from "../../internal/stack.js";
+import { consumeTicket } from "./ticket.js";
 
 // Backend path AFTER nginx strips /api. Frontend connects to /api/stacks/terminal.
 const WS_PATH = "/stacks/terminal";
@@ -27,20 +29,14 @@ export function attachStackTerminal(server) {
 		let terminal = null;
 		try {
 			const url = new URL(req.url, "http://localhost");
-			const token = url.searchParams.get("token");
-			const id = Number.parseInt(url.searchParams.get("stack") || "", 10);
-			const service = url.searchParams.get("service") || "";
-			const shell = url.searchParams.get("shell") || "sh";
-
-			if (!token || Number.isNaN(id) || !service) {
-				ws.close(1008, "Missing token, stack or service");
+			// Authorisation happened when the ticket was issued; redeeming it here
+			// both authenticates the connection and tells us what it may open.
+			const grant = consumeTicket(url.searchParams.get("ticket"));
+			if (!grant) {
+				ws.close(1008, "Invalid or expired ticket");
 				return;
 			}
-
-			// Authenticate + authorize using the same machinery as the REST layer.
-			const access = new Access(token);
-			await access.load();
-			const target = await internalStack.execTarget(access, id, service);
+			const { service, shell, target } = grant;
 
 			// Spawn: docker compose exec <service> <shell>
 			const args = orchestrator.getComposeOptions(target.dir, target.stacksDir, "exec", service, shell);

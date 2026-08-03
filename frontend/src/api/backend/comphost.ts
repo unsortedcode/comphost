@@ -231,3 +231,16 @@ export async function checkCloudflareDomains(
 ): Promise<{ configured: boolean; serverIp: string | null; domains: CloudflareDomainCheck[] }> {
 	return await api.post({ url: "/comphost/cloudflare/check", data: { domains } });
 }
+
+/**
+ * Mint a single-use ticket for the terminal WebSocket. A browser socket can't
+ * send an Authorization header, and a session JWT in the URL would be recorded
+ * in access logs and browser history — so the ticket goes there instead.
+ */
+export async function createTerminalTicket(
+	stackId: number,
+	service: string,
+	shell?: string,
+): Promise<{ ticket: string; expiresIn: number }> {
+	return await api.post({ url: `/stacks/${stackId}/terminal-ticket`, data: { service, shell } });
+}

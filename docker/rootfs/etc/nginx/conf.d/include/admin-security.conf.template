@@ -1,0 +1,24 @@
+# Security headers for the CompHost admin interface.
+#
+# These are deliberately NOT applied to proxied hosts: a CSP or a frame policy
+# imposed on someone else's app is a good way to break it. This file is for our
+# own UI only.
+#
+# nginx add_header inheritance is replace-not-merge — a location with its own
+# add_header discards every inherited one. Keep add_header out of the admin
+# locations so these survive.
+add_header X-Content-Type-Options   "nosniff"                          always;
+add_header X-Frame-Options          "{{X_FRAME_OPTIONS}}"              always;
+add_header Referrer-Policy          "strict-origin-when-cross-origin"  always;
+add_header Permissions-Policy       "camera=(), microphone=(), geolocation=(), interest-cohort=()" always;
+add_header Cross-Origin-Opener-Policy "same-origin"                    always;
+
+# The admin UI is a bundled SPA: no inline or remote scripts, no remote styles.
+# 'unsafe-inline' for styles is required by react-bootstrap/Tabler, which set
+# style attributes; script-src stays strict, which is what limits the damage of
+# an XSS to something that cannot execute.
+#   img-src   gravatar serves user avatars; data: for inline icons and QR codes
+#   connect-src  ws:/wss: for the stack terminal socket
+#   frame-ancestors  the CSP-native form of X-Frame-Options; both it and the
+#                    header follow the X_FRAME_OPTIONS env var
+add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors {{CSP_FRAME_ANCESTORS}}; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https://www.gravatar.com; connect-src 'self' ws: wss:; worker-src 'self' blob:" always;
