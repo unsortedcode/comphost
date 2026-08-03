@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
 import app from "./app.js";
+import { attachStackTerminal } from "./lib/ws/stack-terminal.js";
+import internalBackup from "./internal/backup.js";
 import internalCertificate from "./internal/certificate.js";
+import internalRegistry from "./internal/registry.js";
 import internalIpRanges from "./internal/ip_ranges.js";
 import { global as logger } from "./logger.js";
 import { migrateUp } from "./migrate.js";
@@ -27,9 +30,15 @@ async function appStart() {
 		.then(() => {
 			internalCertificate.initTimer();
 			internalIpRanges.initTimer();
+			internalBackup.initTimer();
+			// Re-apply stored private-registry logins to DOCKER_CONFIG.
+			internalRegistry.initSync();
 
 			const server = app.listen(3000, () => {
 				logger.info(`Backend PID ${process.pid} listening on port 3000 ...`);
+
+				// CompHost: attach the stack terminal WebSocket to the same server.
+				attachStackTerminal(server);
 
 				process.on("SIGTERM", () => {
 					logger.info(`PID ${process.pid} received SIGTERM`);

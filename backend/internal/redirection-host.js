@@ -5,6 +5,7 @@ import utils from "../lib/utils.js";
 import redirectionHostModel from "../models/redirection_host.js";
 import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
+import internalCloudflare from "./cloudflare.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 
@@ -46,6 +47,11 @@ const internalRedirectionHost = {
 					});
 				});
 			})
+			.then(() =>
+				// DNS first: an HTTP-01 challenge against a domain with no A record
+				// can't pass, so the record has to exist before the cert is requested.
+				internalCloudflare.ensureForHost(thisData, createCertificate),
+			)
 			.then(() => {
 				// At this point the domains should have been checked
 				thisData.owner_user_id = access.token.getUserId(1);
@@ -122,6 +128,8 @@ const internalRedirectionHost = {
 
 		return access
 			.can("redirection_hosts:update", thisData.id)
+			// Same ordering as create: the record must exist before any cert request.
+			.then(() => internalCloudflare.ensureForHost(thisData, createCertificate))
 			.then((/*access_data*/) => {
 				// Get a list of the domain names and check each of them against existing records
 				const domain_name_check_promises = [];

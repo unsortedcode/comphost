@@ -43,6 +43,12 @@
 			"description": "Certificates Permissions",
 			"enum": ["hidden", "view", "manage"],
 			"example": "hidden"
+		},
+		"stacks": {
+			"type": "string",
+			"description": "Docker Compose Stacks Permissions",
+			"enum": ["hidden", "view", "manage"],
+			"example": "manage"
 		}
 	}
 }

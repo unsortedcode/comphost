@@ -5,6 +5,7 @@ import utils from "../lib/utils.js";
 import deadHostModel from "../models/dead_host.js";
 import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
+import internalCloudflare from "./cloudflare.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 
@@ -44,7 +45,10 @@ const internalDeadHost = {
 			});
 		});
 
-		// At this point the domains should have been checked
+		// At this point the domains should have been checked.
+		// DNS first: an HTTP-01 challenge against a domain with no A record can't pass.
+		await internalCloudflare.ensureForHost(data, createCertificate);
+
 		data.owner_user_id = access.token.getUserId(1);
 		const thisData = internalHost.cleanSslHstsData(data);
 
@@ -106,6 +110,9 @@ const internalDeadHost = {
 		}
 
 		await access.can("dead_hosts:update", data.id);
+
+		// Same ordering as create: the record must exist before any cert request.
+		await internalCloudflare.ensureForHost(data, createCertificate);
 
 		// Get a list of the domain names and check each of them against existing records
 		const domainNameCheckPromises = [];
