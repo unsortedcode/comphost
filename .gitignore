@@ -10,3 +10,8 @@ docker/dev/dnsrouter-config.json.tmp
 docker/dev/resolv.conf
 .claude
 
+# local env overrides
+backend/.env
+
+# local environment (copy from .env.example)
+.env

@@ -1,111 +1,164 @@
-<p align="center">
-	<img src="https://nginxproxymanager.com/github.png">
-	<br><br>
-	<img src="https://img.shields.io/badge/version-2.15.1-green.svg?style=for-the-badge">
-	<a href="https://hub.docker.com/repository/docker/jc21/nginx-proxy-manager">
-		<img src="https://img.shields.io/docker/stars/jc21/nginx-proxy-manager.svg?style=for-the-badge">
-	</a>
-	<a href="https://hub.docker.com/repository/docker/jc21/nginx-proxy-manager">
-		<img src="https://img.shields.io/docker/pulls/jc21/nginx-proxy-manager.svg?style=for-the-badge">
-	</a>
-</p>
+# CompHost
 
-This project comes as a pre-built Docker image that enables you to easily forward to your websites
-running at home or otherwise, including free SSL, without having to know too much about Nginx or Letsencrypt.
+**A fork of [Nginx Proxy Manager](https://github.com/NginxProxyManager/nginx-proxy-manager)
+where a proxy host can *be* a Docker Compose stack.**
 
-- [Quick Setup](#quick-setup)
-- [Full Setup](https://nginxproxymanager.com/setup/)
-- [Screenshots](https://nginxproxymanager.com/screenshots/)
+Nginx Proxy Manager gives you a beautiful UI for routing traffic to things that
+already exist. CompHost adds the other half: create the thing, from the same UI.
+Paste a compose file, deploy it, and publish it on a domain with a Let's Encrypt
+certificate — without touching a terminal.
 
-## Project Goal
+> Not affiliated with jc21 or the Nginx Proxy Manager project. Please report
+> issues here, not upstream.
 
-I created this project to fill a personal need to provide users with an easy way to accomplish reverse
-proxying hosts with SSL termination, and it had to be so easy that a monkey could do it. This goal hasn't changed.
-While there might be advanced options, they are optional, and the project should be as simple as possible
-so that the barrier to entry here is low.
+---
 
-<a href="https://www.buymeacoffee.com/jc21" target="_blank"><img src="http://public.jc21.com/github/by-me-a-coffee.png" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
+## What this adds to Nginx Proxy Manager
 
+Everything upstream does — proxy hosts, redirections, 404 hosts, streams, access
+lists, certificates with 80+ DNS providers, multi-user RBAC — works unchanged.
+On top of that:
 
-## Features
+### Stacks are first-class
 
-- Beautiful and Secure Admin Interface based on [Tabler](https://tabler.github.io/)
-- Easily create forwarding domains, redirections, streams, and 404 hosts without knowing anything about Nginx
-- Free SSL using Let's Encrypt or provide your own custom SSL certificates
-- Access Lists and basic HTTP Authentication for your hosts
-- Advanced Nginx configuration available for super users
-- User management, permissions, and audit log
+- **Compose editor in the UI** with validation on save: a bad file is rejected
+  with the parser's own message, not at deploy time.
+- **Lifecycle actions** — deploy, restart, stop, down, update — each streaming
+  live `docker compose` output into the UI rather than a blind spinner.
+- **Logs**: `compose logs -f` streamed to a terminal in the browser.
+- **Console**: an interactive shell into any service (`compose exec`).
+- **`docker run` → compose** converter for pasting commands from a README.
+- **Per-stack `.env` editor** that reads the variables your compose file actually
+  references, shows their inline defaults, and flags the ones you haven't set.
+- **Adopt existing projects** in place — including stopped ones, via a directory
+  browser. Nothing is moved, so relative bind mounts keep working.
 
-::: warning
-`armv7` is no longer supported in version 2.14+. This is due to Nodejs dropping support for armhf. Please
-use the `2.13.7` image tag if this applies to you.
-:::
+### One-click publishing
 
-## Hosting your home network
+Pick a service and a domain. CompHost attaches the container to a shared Docker
+network with a DNS alias, points nginx at `alias:port`, and optionally in the
+same step: requests a Let's Encrypt certificate, creates the Cloudflare DNS
+record, and puts HTTP basic auth in front. Exposures survive redeploys.
 
-I won't go into too much detail here, but here are the basics for someone new to this self-hosted world.
+Non-HTTP services (game servers, databases) get the same treatment as TCP/UDP
+stream hosts.
 
-1. Your home router will have a Port Forwarding section somewhere. Log in and find it
-2. Add port forwarding for ports 80 and 443 to the server hosting this project
-3. Configure your domain name details to point to your home, either with a static ip or a service like
-   - DuckDNS
-   - [Amazon Route53](https://github.com/jc21/route53-ddns)
-   - [Cloudflare](https://github.com/jc21/cloudflare-ddns)
-4. Use the Nginx Proxy Manager as your gateway to forward to your other web-based services
+### Operations
 
-## Quick Setup
+- **Image update checking** — compares local image digests against the registry
+  and badges stacks that have updates.
+- **Backups** — config backup (database, keys, nginx configs, per-stack
+  compose/.env) plus per-volume and per-bind-mount backups to S3 (rclone) or SSH
+  (rsync), with real cron scheduling. Volumes are found by compose label, so a
+  *stopped* stack still backs up. SSH targets get a generated keypair and a
+  connection test.
+- **Private registry logins** managed in the UI and shared with stack pulls.
+- **Cloudflare integration** — accepts either an API Token or a legacy Global API
+  Key and works out which you pasted.
+- **Audit log filters** by object, event, stack and domain.
+- **Self-hosting** — CompHost can request a certificate for its own admin panel
+  and serve it over HTTPS.
 
-1. [Install Docker](https://docs.docker.com/install/)
-2. Create a docker-compose.yml file similar to this:
+### Fixes that came out of building this
 
-```yml
-services:
-  app:
-    image: 'docker.io/jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
-    ports:
-      - '80:80'
-      - '81:81'
-      - '443:443'
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-```
+Some are upstream behaviours worth knowing about:
 
-This is the bare minimum configuration required. See the [documentation](https://nginxproxymanager.com/setup/) for more.
+- **Certificate failures used to surface as "Internal Error."** certbot's real
+  reason (challenge blocked by a CDN, NXDOMAIN, rate limit, bad account email)
+  is now extracted and shown.
+- **DNS is checked before a certificate is requested.** Asking a CA to validate a
+  name that doesn't resolve can't succeed, and the failed lookup gets cached on
+  *their* side — so the retry fails too. CompHost refuses early, and after
+  creating a DNS record it waits for the authoritative nameservers to answer
+  before continuing.
+- **Missing nginx configs are rebuilt at boot.** Host configs are written on
+  save, not derived from the database, so an instance started against an existing
+  database without its `/data/nginx` directory used to list every host in the UI
+  while serving none of them.
 
-3. Bring up your stack by running
+---
+
+## Quick start
 
 ```bash
+git clone https://github.com/unsortedcode/comphost.git && cd comphost
+cp .env.example .env      # set the admin password and stacks directory
 docker compose up -d
 ```
 
-4. Log in to the Admin UI
+Or without a checkout — copy `docker-compose.yml` and `.env.example` onto the
+host, edit the `.env`, and `docker compose up -d`. The image is pulled; nothing
+is built.
 
-When your docker container is running, connect to it on port `81` for the admin interface.
-Sometimes this can take a little bit because of the entropy of keys.
+Then open `http://<host>:81` and create the first admin account.
 
-[http://127.0.0.1:81](http://127.0.0.1:81)
+There is also a guided installer for Ubuntu that installs Docker, prompts for the
+admin account, domain and stacks directory, and waits for readiness — see
+[INSTALL.md](comphost-docs/INSTALL.md).
 
+### Two rules that matter
 
-## Contributing
+1. **Mount the stacks directory at the same path on both sides**
+   (`/opt/stacks:/opt/stacks`). Compose talks to the host's Docker daemon, so any
+   relative bind mount inside a stack is resolved by the host, not the container.
+   A mismatched path breaks volumes in ways that are hard to diagnose.
+2. **The Docker socket is root-equivalent.** Anyone who can manage a stack can
+   run any container on the host. Treat admin accounts accordingly. The
+   `docker-socket-proxy` overlay narrows what the socket exposes.
 
-All are welcome to create pull requests for this project, against the `develop` branch. Official releases are created from the `master` branch.
+---
 
-CI is used in this project. All PR's must pass before being considered. After passing,
-docker builds for PR's are available on dockerhub for manual verifications.
+## Upgrading from Nginx Proxy Manager
 
-Documentation within the `develop` branch is available for preview at
-[https://develop.nginxproxymanager.com](https://develop.nginxproxymanager.com)
+Your data comes across as-is — CompHost *is* NPM, plus migrations that only add
+tables and columns. Point it at your existing `/data` and `/etc/letsencrypt`
+volumes and your proxy hosts, certificates, access lists and users are all
+there, with the same logins.
 
+See [MIGRATING-FROM-NPM.md](comphost-docs/MIGRATING-FROM-NPM.md) for the
+step-by-step, including the one trap worth knowing about (bring the whole `/data`
+volume, not just the database).
 
-### Contributors
+---
 
-Special thanks to [all of our contributors](https://github.com/NginxProxyManager/nginx-proxy-manager/graphs/contributors).
+## Documentation
 
+| | |
+|---|---|
+| [FEATURES.md](comphost-docs/FEATURES.md) | Everything CompHost adds, grouped by area |
+| [INSTALL.md](comphost-docs/INSTALL.md) | Installing on Docker or Ubuntu |
+| [MIGRATING-FROM-NPM.md](comphost-docs/MIGRATING-FROM-NPM.md) | Upgrading an existing NPM box |
 
-## Getting Support
+---
 
-1. [Found a bug?](https://github.com/NginxProxyManager/nginx-proxy-manager/issues)
-2. [Discussions](https://github.com/NginxProxyManager/nginx-proxy-manager/discussions)
-3. [Reddit](https://reddit.com/r/nginxproxymanager)
+## Known limitations
+
+- **Docker is required.** There is no bare-metal install; upstream's runtime is
+  container-coupled (hardcoded `/data`, a custom nginx build, s6, a certbot venv).
+- **Single host.** No multi-node support yet.
+- **Stored credentials are encoded, not encrypted.** Cloudflare tokens, registry
+  logins and generated SSH keys live in the database in the clear (masked in API
+  responses). Same posture as upstream.
+- **amd64 only so far.** The Dockerfile is architecture-aware but arm64 hasn't
+  been built.
+- **Based on upstream `develop`**, not a stable tag — because the stable 2.9.x
+  line is the previous UI. Upstream may move under us.
+
+Everything that *is* built is listed in [FEATURES.md](comphost-docs/FEATURES.md).
+
+---
+
+## Credits
+
+This is a fork of **[Nginx Proxy Manager](https://github.com/NginxProxyManager/nginx-proxy-manager)**
+by [jc21](https://github.com/jc21) and its contributors, which is the entire
+foundation here — the nginx templating, certbot integration, database layer, RBAC
+and UI are all theirs. If this is useful to you, consider
+[buying jc21 a coffee](https://www.buymeacoffee.com/jc21).
+
+The compose orchestration logic was ported from
+**[Dockge](https://github.com/louislam/dockge)** by [louislam](https://github.com/louislam)
+(MIT) — the status model, port parsing and `docker compose` handling started
+there before being converted to this codebase's conventions.
+
+Licensed under the [MIT License](LICENSE), as is upstream.

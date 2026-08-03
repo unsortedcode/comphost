@@ -1,0 +1,2 @@
+base=a62c2a6dc3ab51e6fedc34d3ea3506bc9373953f
+upstream=NginxProxyManager/nginx-proxy-manager @ develop (React 19 rewrite, internal v2.0.0)
