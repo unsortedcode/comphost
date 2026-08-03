@@ -65,12 +65,12 @@ export default function Setup() {
 				<ThemeSwitcher />
 			</div>
 			<div className="container container-tight py-4">
-				<div className="text-center mb-4">
-					<img
-						className={styles.logo}
-						src="/images/logo-bold-horizontal-grey.svg"
-						alt="CompHost"
-					/>
+				<div
+					className="d-flex align-items-center justify-content-center gap-2 mb-4"
+					title="Nginx Proxy Manager + Compose Stacks"
+				>
+					<img className={styles.logo} src="/images/logo-no-text.svg" alt="CompHost" />
+					<span className="h1 mb-0">CompHost</span>
 				</div>
 				<div className="card card-md">
 					<Alert variant="danger" show={!!errorMsg} onClose={() => setErrorMsg(null)} dismissible>

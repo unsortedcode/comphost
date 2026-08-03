@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="520" height="600" version="1.1" viewBox="0 0 520 600" xmlns="http://www.w3.org/2000/svg">
  <defs>
-  <style>.a{isolation:isolate;}.b{fill:#545454;}.c{fill:#faa42f;}.aa,.ab,.ac,.ad,.ae,.af,.ag,.ah,.aj,.ak,.am,.an,.ao,.c,.d,.e,.f,.g,.h,.i,.j,.k,.l,.m,.n,.o,.p,.q,.r,.s,.t,.u,.v,.w,.x,.y,.z{fill-rule:evenodd;}.d{fill:#ddb02a;}.e{fill:#c47728;}.f{fill:#f15933;}.g{fill:#f37132;}.h{fill:#d6e042;}.i{fill:#fcea3b;}.j{fill:#e22574;}.k{fill:#ef3839;}.l{fill:#bbd64b;}.m{fill:#ffcf29;}.n{fill:#ee438d;}.o{fill:#cc3192;}.p{fill:#bd2025;}.q{fill:#9b3995;}.r{fill:#f1eb59;}.s{fill:#f7975f;}.t{fill:#d31f26;}.u{fill:#73206a;}.ai,.v{fill:#853a96;}.w{fill:#d98a26;}.x{fill:#8f4f9f;}.y{fill:#d24b9b;}.z{fill:#b263a7;}.aa{fill:#6b297a;}.ab{fill:#782a8f;}.ac{fill:#a01664;}.ad{fill:#c02026;}.ae{fill:#9051a0;}.af{fill:#b01b4a;}.ag{fill:#c54627;}.ah{fill:#a41768;}.aj{fill:#d1499a;}.ak{fill:#85459a;}.al{fill:#341144;}.am{fill:#ee3f8a;}.an{fill:#f4805f;}.ao{fill:#552263;}</style>
+  <style>.a{isolation:isolate;}.b{fill:#545454;}.c{fill:#11f2f3;}.aa,.ab,.ac,.ad,.ae,.af,.ag,.ah,.aj,.ak,.am,.an,.ao,.c,.d,.e,.f,.g,.h,.i,.j,.k,.l,.m,.n,.o,.p,.q,.r,.s,.t,.u,.v,.w,.x,.y,.z{fill-rule:evenodd;}.d{fill:#0ae8f6;}.e{fill:#0cd1cd;}.f{fill:#11d1b9;}.g{fill:#0fddcd;}.h{fill:#23e0f9;}.i{fill:#2ee2f9;}.j{fill:#128c63;}.k{fill:#12c09e;}.l{fill:#23e0f9;}.m{fill:#1de8f7;}.n{fill:#159f70;}.o{fill:#12764d;}.p{fill:#0f987d;}.q{fill:#0d4b2c;}.r{fill:#39e3fa;}.s{fill:#1bf0e1;}.t{fill:#10a284;}.u{fill:#082f1c;}.ai,.v{fill:#0d492b;}.w{fill:#0ce0df;}.x{fill:#0f5733;}.y{fill:#14885b;}.z{fill:#136e42;}.aa{fill:#09341f;}.ab{fill:#0b3f25;}.ac{fill:#0d593c;}.ad{fill:#0f997d;}.ae{fill:#105934;}.af{fill:#0f7758;}.ag{fill:#0eb49f;}.ah{fill:#0d5a3d;}.aj{fill:#148659;}.ak{fill:#0e502f;}.al{fill:#062314;}.am{fill:#159d70;}.an{fill:#12ebd2;}.ao{fill:#072617;}</style>
  </defs>
  <polygon class="c" points="2.14 451 2.14 449 0 448 0 450"/>
  <polygon class="d" points="0 375 2.14 374 2.14 337 0 336"/>
@@ -93,7 +93,7 @@
  <!-- CompHost: docker-compose "stack" badge overlay (npm + stacks) -->
  <g>
   <circle cx="408" cy="500" r="99" fill="#ffffff"/>
-  <circle cx="408" cy="500" r="87" fill="#2496ed"/>
+  <circle cx="408" cy="500" r="87" fill="#0b3d24"/>
   <g transform="translate(408,500) scale(4.5) translate(-12,-12)" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
    <path d="M12 3 L21 7.5 L12 12 L3 7.5 Z"/>
    <path d="M3 12 L12 16.5 L21 12"/>

@@ -182,20 +182,17 @@ export default function Login() {
 		<Page className="page page-center">
 			<div className="container container-tight py-4">
 				<div className="d-flex justify-content-between align-items-center mb-4 ps-4 pe-3">
-					<img
-						className={styles.logo}
-						src="/images/logo-bold-horizontal-grey.svg"
-						alt="CompHost"
-					/>
+					<div className="d-flex align-items-center gap-2" title="Nginx Proxy Manager + Compose Stacks">
+						<img className={styles.logo} src="/images/logo-no-text.svg" alt="CompHost" />
+						<span className="h1 mb-0">CompHost</span>
+					</div>
 					<div className="d-flex align-items-center gap-1">
 						<LocalePicker />
 						<ThemeSwitcher />
 					</div>
 				</div>
 				<div className="card card-md">
-					<div className="card-body">
-						{twoFactorChallenge ? <TwoFactorForm /> : <LoginForm />}
-					</div>
+					<div className="card-body">{twoFactorChallenge ? <TwoFactorForm /> : <LoginForm />}</div>
 				</div>
 				<div className="text-center text-secondary mt-3">{getVersion()}</div>
 			</div>

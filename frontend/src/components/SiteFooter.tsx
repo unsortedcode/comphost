@@ -20,7 +20,7 @@ export function SiteFooter() {
 						<ul className="list-inline list-inline-dots mb-0">
 							<li className="list-inline-item">
 								<a
-									href="https://github.com/NginxProxyManager/nginx-proxy-manager"
+									href="https://github.com/unsortedcode/comphost"
 									target="_blank"
 									className="link-secondary"
 									rel="noopener"
@@ -33,13 +33,7 @@ export function SiteFooter() {
 					<div className="col-12 col-lg-auto mt-3 mt-lg-0">
 						<ul className="list-inline list-inline-dots mb-0">
 							<li className="list-inline-item">
-								© 2026{" "}
-								<a href="https://jc21.com" rel="noreferrer" target="_blank" className="link-secondary">
-									jc21.com
-								</a>
-							</li>
-							<li className="list-inline-item">
-								Stacks by{" "}
+								CompHost © 2026{" "}
 								<a
 									href="https://unsortedcode.com"
 									rel="noreferrer"
@@ -47,6 +41,12 @@ export function SiteFooter() {
 									className="link-secondary"
 								>
 									Unsorted Code
+								</a>
+							</li>
+							<li className="list-inline-item">
+								NPM © 2026{" "}
+								<a href="https://jc21.com" rel="noreferrer" target="_blank" className="link-secondary">
+									jc21
 								</a>
 							</li>
 							<li className="list-inline-item">
