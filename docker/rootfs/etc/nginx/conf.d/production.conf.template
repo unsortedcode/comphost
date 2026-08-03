@@ -13,10 +13,16 @@ server {
 
 	location /api/ {
 		add_header            X-Served-By $host;
+		proxy_http_version    1.1;
 		proxy_set_header Host $host;
 		proxy_set_header      X-Forwarded-Scheme $scheme;
 		proxy_set_header      X-Forwarded-Proto  $scheme;
 		proxy_set_header      X-Forwarded-For    $remote_addr;
+		# CompHost: WebSocket upgrade (stack terminals) + unbuffered SSE (stack logs)
+		proxy_set_header      Upgrade $http_upgrade;
+		proxy_set_header      Connection $http_connection;
+		proxy_buffering       off;
+		proxy_cache           off;
 		proxy_pass            http://127.0.0.1:3000/;
 
 		proxy_read_timeout 15m;

@@ -1,0 +1,60 @@
+# CompHost — production compose.
+#
+# Pulls the published image; nothing needs to be built and no source checkout is
+# required. This file plus a .env is all a fresh machine needs:
+#
+#   cp .env.example .env      # then edit it
+#   docker compose up -d
+#
+# To build from source instead (for development or a custom patch), add the
+# build override:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
+# Ports: 80 (HTTP + ACME challenges), 443 (HTTPS), 81 (admin UI).
+# Once a domain points here you can secure the admin panel with a real
+# certificate on 443 (Settings → "Secure this admin panel") and then firewall
+# port 81 to localhost.
+#
+# ⚠️ Stacks-dir path identity: both sides of the stacks mount MUST be the same
+# absolute path. Compose runs against the host's Docker daemon, so a relative
+# bind mount inside one of your stacks is resolved by the host — a mismatch
+# silently sends volumes to the wrong place.
+services:
+  comphost:
+    image: "${COMPHOST_IMAGE:-ghcr.io/unsortedcode/comphost:latest}"
+    container_name: comphost
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    environment:
+      TZ: "${TZ:-UTC}"
+      # First-run admin (only used if the database has no users yet):
+      INITIAL_ADMIN_EMAIL: "${COMPHOST_ADMIN_EMAIL:-admin@example.com}"
+      INITIAL_ADMIN_PASSWORD: "${COMPHOST_ADMIN_PASSWORD:-changeme}"
+      # Where UI-managed compose stacks live (identical host:container path):
+      COMPHOST_STACKS_DIR: "${COMPHOST_STACKS_DIR:-/opt/stacks}"
+      # How long to wait for a new DNS record to become answerable before
+      # requesting a certificate for it.
+      COMPHOST_DNS_WAIT_MS: "${COMPHOST_DNS_WAIT_MS:-120000}"
+      # Default DB is sqlite at /data/database.sqlite. For mysql/postgres set the
+      # DB_MYSQL_* / DB_POSTGRES_* vars (see backend/lib/config.js).
+      DISABLE_IPV6: "true"
+    volumes:
+      - "${COMPHOST_DATA_DIR:-./data}:/data"
+      - "${COMPHOST_LETSENCRYPT_DIR:-./letsencrypt}:/etc/letsencrypt"
+      # Docker control for stack management:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Stacks directory — identical path both sides:
+      - "${COMPHOST_STACKS_DIR:-/opt/stacks}:${COMPHOST_STACKS_DIR:-/opt/stacks}"
+    networks:
+      - default
+      - comphost
+
+networks:
+  # Shared network CompHost proxies exposed stack services over. Explicit name so
+  # the backend can `docker network connect comphost ...`.
+  comphost:
+    name: comphost

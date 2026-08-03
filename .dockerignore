@@ -1,0 +1,16 @@
+# Keep the build context small + reproducible. node_modules are installed inside
+# the image (backend via yarn install; frontend via the builder stage), never copied
+# from the host — host copies would be the wrong platform and bloat the context.
+**/node_modules
+frontend/dist
+.git
+comphost-docs
+research
+prod-test
+data
+letsencrypt
+**/*.log
+**/.DS_Store
+docker/comphost-dev.yml
+docker/docker-compose.dev.yml
+docker/docker-compose.ci*.yml

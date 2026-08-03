@@ -1,0 +1,70 @@
+# CompHost lean DEV compose — NOT upstream's docker-compose.dev.yml.
+# Strips mariadb/postgres/authentik/step-ca: just the app on sqlite, plus the
+# docker.sock + stacks-dir mounts needed for compose-stack management.
+#
+# Usage (from repo root):
+#   docker compose -f docker/comphost-dev.yml up --build
+# Admin UI: http://localhost:3081   (login: admin@example.com / changeme)
+services:
+  comphost:
+    build:
+      context: ./
+      dockerfile: ./comphost-dev.Dockerfile
+    image: comphost-dev:full
+    container_name: comphost.dev
+    ports:
+      - 8380:80
+      - 3080:80
+      - 3081:81
+      - 3443:443
+    environment:
+      TZ: "${TZ:-UTC}"
+      PUID: 1000
+      PGID: 1000
+      FORCE_COLOR: 1
+      DEBUG: "true"
+      DEVELOPMENT: "true"
+      LE_STAGING: "true"
+      # Windows/Docker Desktop bind mounts don't emit inotify events, so file
+      # watchers must poll. Enables vite HMR + nodemon reload on host edits.
+      CHOKIDAR_USEPOLLING: "true"
+      # The recursive chown of the certbot venv in s6 prepare is pathologically
+      # slow on Docker Desktop (minutes) and blocks boot — skip it in dev.
+      SKIP_CERTBOT_OWNERSHIP: "true"
+      # Upstream ships backend/config/default.json (mysql host "db"), which the
+      # config loader prefers over env. Point NODE_CONFIG_DIR at /data (no
+      # default.json there) so it falls through to the sqlite env default below.
+      NODE_CONFIG_DIR: "/data"
+      # No DB_* vars -> backend falls back to sqlite at /data/database.sqlite
+      # First-run admin (backend/setup.js seeds this if the DB has no users):
+      INITIAL_ADMIN_EMAIL: "admin@example.com"
+      INITIAL_ADMIN_PASSWORD: "changeme"
+      # Where compose stacks live. MUST be identical host:container path (P1).
+      COMPHOST_STACKS_DIR: "/opt/stacks"
+      # Shared docker config dir (holds private-registry auths) — persisted on /data.
+      DOCKER_CONFIG: "/data/.docker"
+    volumes:
+      - comphost_data:/data
+      - le_data:/etc/letsencrypt
+      - ../backend:/app
+      - ../frontend:/frontend
+      # Docker control (sibling containers on the host daemon):
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Stacks dir — identical path both sides:
+      - /opt/stacks:/opt/stacks
+    working_dir: /app
+    # Join the shared comphost network so nginx can resolve exposed service
+    # aliases via docker DNS.
+    networks:
+      - default
+      - comphost
+
+volumes:
+  comphost_data:
+  le_data:
+
+networks:
+  comphost:
+    # Explicit name (no project prefix) so the backend can `network connect comphost`.
+    name: comphost
+

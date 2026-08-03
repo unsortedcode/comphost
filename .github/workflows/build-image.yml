@@ -1,0 +1,74 @@
+# Build the CompHost production image and publish it to GitHub Container
+# Registry on every push to main, on version tags, and on manual runs.
+#
+# Published as:
+#   ghcr.io/unsortedcode/comphost:latest      (develop)
+#   ghcr.io/unsortedcode/comphost:<short-sha> (every build)
+#   ghcr.io/unsortedcode/comphost:v1.2.3      (on a v* tag)
+#
+# Auth uses the automatic GITHUB_TOKEN — no secrets to configure. The package is
+# created private on first publish; make it public under
+# Packages → comphost → Package settings → Change visibility.
+name: build-image
+
+on:
+  push:
+    branches: [develop]
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+# Don't waste minutes: a newer push to the same ref cancels the older run.
+concurrency:
+  group: build-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Registry paths must be lowercase; the repo name is not.
+      - name: Compute image name and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/comphost
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short,prefix=
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/comphost.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Layer cache in the Actions cache, so repeat builds skip the frontend
+          # compile when nothing in it changed.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Report
+        run: |
+          echo "Published:"
+          echo "${{ steps.meta.outputs.tags }}"

@@ -1,0 +1,52 @@
+# Optional hardening overlay: route CompHost's Docker access through
+# tecnativa/docker-socket-proxy instead of mounting the raw socket.
+# The raw socket = host root; the proxy restricts the API surface to what CompHost
+# actually needs.
+#
+# Usage (layer on top of the base compose):
+#   docker compose -f docker-compose.yml -f docker/comphost.socket-proxy.yml up -d
+#
+# Note the enabled permissions below are broad because stack management genuinely
+# needs them (create/exec containers, manage networks, pull images). The win is
+# that everything else (swarm, secrets, plugins, the host filesystem via build,
+# etc.) stays denied, and the raw socket is never exposed to the app container.
+services:
+  comphost:
+    # Talk to the proxy instead of the raw socket.
+    environment:
+      DOCKER_HOST: "tcp://docker-socket-proxy:2375"
+    # Remove the raw socket mount that the base compose defines.
+    volumes: !override
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+      - /opt/stacks:/opt/stacks
+    depends_on:
+      - docker-socket-proxy
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: comphost-socket-proxy
+    restart: unless-stopped
+    environment:
+      # Read APIs CompHost needs:
+      CONTAINERS: "1"
+      IMAGES: "1"
+      NETWORKS: "1"
+      SERVICES: "0"
+      TASKS: "0"
+      VOLUMES: "1"
+      INFO: "1"
+      VERSION: "1"
+      # Write APIs (compose up/down, exec, network connect, pulls):
+      POST: "1"
+      EXEC: "1"
+      # Keep the dangerous surface denied:
+      SWARM: "0"
+      SECRETS: "0"
+      CONFIGS: "0"
+      PLUGINS: "0"
+      SYSTEM: "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - default

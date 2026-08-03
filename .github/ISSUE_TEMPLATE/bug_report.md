@@ -9,14 +9,17 @@ assignees: ''
 <!--
  
 Are you in the right place?
-- If you are looking for support on how to get your upstream server forwarding, please consider asking the community on Reddit.
-- If you are writing code changes to contribute and need to ask about the internals of the software, Gitter is the best place to ask.
-- If you think you found a bug with NPM (not Nginx, or your upstream server or MySql) then you are in the *right place.*
+- This is CompHost, a fork of Nginx Proxy Manager. Bugs in the parts CompHost adds
+  (stacks, exposure, backups, Cloudflare DNS) belong here.
+- Bugs you can also reproduce on stock `jc21/nginx-proxy-manager` belong upstream:
+  https://github.com/NginxProxyManager/nginx-proxy-manager/issues
+- Questions about forwarding to your own upstream server, Nginx itself, or your
+  database are usually not bugs — the self-hosting communities are a better place.
 
 -->
 
 **Checklist**
-- Have you pulled and found the error with `jc21/nginx-proxy-manager:latest` docker image?
+- Have you reproduced the error on the latest `ghcr.io/unsortedcode/comphost:latest` image?
   - Yes / No
 - Are you sure you're not using someone else's docker image?
   - Yes / No
