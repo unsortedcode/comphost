@@ -37,7 +37,12 @@ const execFile = (cmd, args, options) => {
 	return new Promise((resolve, reject) => {
 		nodeExecFile(cmd, args, opts, (err, stdout, stderr) => {
 			if (err && typeof err === "object") {
-				reject(new errs.CommandError(stderr, 1, err));
+				const commandError = new errs.CommandError(stderr, 1, err);
+				// Keep stdout too. certbot writes only a terse summary to stderr
+				// ("Some challenges have failed.") and puts the part worth reading —
+				// the per-domain "Detail:" lines — on stdout.
+				commandError.stdout = stdout;
+				reject(commandError);
 			} else {
 				resolve(stdout.trim());
 			}

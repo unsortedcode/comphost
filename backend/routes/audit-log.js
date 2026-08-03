@@ -37,15 +37,49 @@ router
 						query: {
 							$ref: "common#/properties/query",
 						},
+						object_type: { type: ["string", "null"], maxLength: 50 },
+						action: { type: ["string", "null"], maxLength: 50 },
+						stack: { type: ["string", "null"], maxLength: 255 },
+						domain: { type: ["string", "null"], maxLength: 255 },
 					},
 				},
 				{
 					expand: typeof req.query.expand === "string" ? req.query.expand.split(",") : null,
 					query: typeof req.query.query === "string" ? req.query.query : null,
+					object_type: typeof req.query.object_type === "string" ? req.query.object_type : null,
+					action: typeof req.query.action === "string" ? req.query.action : null,
+					stack: typeof req.query.stack === "string" ? req.query.stack : null,
+					domain: typeof req.query.domain === "string" ? req.query.domain : null,
 				},
 			);
-			const rows = await internalAuditLog.getAll(res.locals.access, data.expand, data.query);
+			const rows = await internalAuditLog.getAll(res.locals.access, data.expand, data.query, {
+				object_type: data.object_type,
+				action: data.action,
+				stack: data.stack,
+				domain: data.domain,
+			});
 			res.status(200).send(rows);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
+ * GET /api/audit-log/filters
+ *
+ * Distinct values present in the log, to populate the filter controls.
+ * Declared before /:event_id so it isn't swallowed by that pattern.
+ */
+router
+	.route("/filters")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+	.get(async (req, res, next) => {
+		try {
+			res.status(200).send(await internalAuditLog.filterOptions(res.locals.access));
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
 			next(err);

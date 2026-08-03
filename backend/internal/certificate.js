@@ -8,6 +8,7 @@ import { ProxyAgent } from "proxy-agent";
 import tempWrite from "temp-write";
 import dnsPlugins from "../certbot/dns-plugins.json" with { type: "json" };
 import { installPlugin } from "../lib/certbot.js";
+import { resolvesAnywhere } from "../lib/dns.js";
 import { useLetsencryptServer, useLetsencryptStaging } from "../lib/config.js";
 import error from "../lib/error.js";
 import utils from "../lib/utils.js";
@@ -16,6 +17,7 @@ import certificateModel from "../models/certificate.js";
 import tokenModel from "../models/token.js";
 import userModel from "../models/user.js";
 import internalAuditLog from "./audit-log.js";
+import internalCloudflare from "./cloudflare.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 
@@ -26,6 +28,134 @@ const certbotWorkDir = "/tmp/letsencrypt-lib";
 
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted", "meta.dns_provider_credentials"];
+};
+
+/**
+ * Fail fast when a domain has no DNS at all.
+ *
+ * An HTTP-01 challenge for a name that doesn't resolve cannot succeed, and every
+ * attempt counts against Let's Encrypt's rate limit — so this is worth catching
+ * before we ask them. The message names the fix, including the Cloudflare one
+ * when Cloudflare is configured and the zone is actually visible to us.
+ *
+ * Skipped for DNS-01 (the record is created as part of the challenge) and for
+ * wildcards (which require DNS-01 anyway).
+ *
+ * @param {Object} certificate
+ */
+const assertDomainsResolve = async (certificate) => {
+	if (certificate.meta?.dns_challenge) {
+		return;
+	}
+	const names = (certificate.domain_names || []).filter((d) => d && !d.startsWith("*."));
+	if (!names.length) {
+		return;
+	}
+
+	// resolvesAnywhere falls back to the authoritative nameservers, so a record
+	// created moments ago isn't rejected just because the local resolver is still
+	// holding the NXDOMAIN it cached before the record existed.
+	const unresolved = [];
+	for (const name of names) {
+		if (!(await resolvesAnywhere(name))) {
+			unresolved.push(name);
+		}
+	}
+	if (!unresolved.length) {
+		return;
+	}
+
+	// Is Cloudflare in a position to fix this for them?
+	let hint = "Create an A record pointing at this server, then try again.";
+	try {
+		const cf = await internalCloudflare.checkDomains(unresolved);
+		if (cf.configured) {
+			const managed = cf.domains.filter((d) => d.inZone).map((d) => d.domain);
+			if (managed.length === unresolved.length) {
+				hint = `Tick "Create DNS record in Cloudflare" when saving${
+					cf.serverIp ? ` (it will point at ${cf.serverIp})` : ""
+				}, or add the record manually.`;
+			} else if (managed.length) {
+				hint = `${managed.join(", ")} can be created by ticking "Create DNS record in Cloudflare"; the rest are not in a Cloudflare zone this token can see.`;
+			} else {
+				hint = "These domains are not in any Cloudflare zone this token can see, so add the DNS record with your DNS provider.";
+			}
+		}
+	} catch (_err) {
+		// Cloudflare unreachable/unconfigured — the generic hint still stands.
+	}
+
+	throw new error.ValidationError(
+		`${unresolved.join(", ")} ${unresolved.length === 1 ? "does" : "do"} not resolve in DNS, so a certificate cannot be issued. ${hint}`,
+	);
+};
+
+/**
+ * Certbot failures surface as CommandError, which is `public: false` — so the API
+ * replaces the message with a bare "Internal Error" and the actual reason is lost
+ * to everyone without shell access. That reason is nearly always the actionable
+ * part (challenge blocked by a CDN/proxy, NXDOMAIN, rate limit, bad email), so
+ * re-wrap it as a public error the UI can show.
+ *
+ * @param   {Error} err  the error certbot rejected with
+ * @returns {Error}      a public ValidationError, or the original if unparseable
+ */
+const publicCertbotError = (err) => {
+	// stdout carries the per-domain problem report; stderr only the summary.
+	const raw = [err?.stdout, err?.message].filter(Boolean).join("\n").trim();
+	if (!raw) {
+		return err;
+	}
+	const lines = raw
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(
+			(line) =>
+				line &&
+				!/^(Saving debug log|Please see the logfile|Ask for help|Requesting a certificate|Certbot failed to authenticate|- - -)/i.test(
+					line,
+				),
+		);
+	if (!lines.length) {
+		return err;
+	}
+
+	// Certbot's per-domain report is the actionable part:
+	//   Domain: app.example.com
+	//   Type:   unauthorized
+	//   Detail: 1.2.3.4: Invalid response from http://…/.well-known/acme-challenge/x: 404
+	// Pair each Domain with its Detail; fall back to Detail alone, then to
+	// certbot's own prose (which is where "invalid email address" lives).
+	const details = [];
+	for (const [i, line] of lines.entries()) {
+		const detail = line.match(/^Detail:\s*(.+)$/i);
+		if (!detail) {
+			continue;
+		}
+		const domain = lines
+			.slice(Math.max(0, i - 3), i)
+			.find((l) => /^Domain:/i.test(l))
+			?.replace(/^Domain:\s*/i, "");
+		details.push(domain ? `${domain}: ${detail[1]}` : detail[1]);
+	}
+
+	// The Hint certbot prints after a failed challenge usually names the fix.
+	const hint = lines.find((line) => /^Hint:/i.test(line));
+
+	let message;
+	if (details.length) {
+		message = details.slice(0, 3).join(" | ") + (hint ? ` — ${hint}` : "");
+	} else {
+		message = lines.filter((l) => !/^(Domain|Type):/i.test(l)).slice(0, 3).join(" ");
+	}
+	// A CA that looked up the name before the record existed caches that miss for
+	// the zone's negative TTL, so an immediate retry fails identically. Say so —
+	// otherwise it looks like the DNS record didn't work.
+	if (/NXDOMAIN/i.test(message)) {
+		message +=
+			" (If the DNS record exists now, Let's Encrypt may still be caching the earlier lookup — wait a few minutes before retrying.)";
+	}
+	return new error.ValidationError(`Certificate request failed: ${message.substring(0, 700)}`, err);
 };
 
 const internalCertificate = {
@@ -128,6 +258,11 @@ const internalCertificate = {
 		try {
 			if (certificate.provider === "letsencrypt") {
 				// Request a new Cert from LE. Let the fun begin.
+
+				// 0. Refuse to spend a Let's Encrypt attempt on a domain that doesn't
+				//    resolve. HTTP-01 cannot possibly pass, and failed attempts count
+				//    against the account's rate limit.
+				await assertDomainsResolve(certificate);
 
 				// 1. Find out any hosts that are using any of the hostnames in this cert
 				// 2. Disable them in nginx temporarily
@@ -811,9 +946,13 @@ const internalCertificate = {
 
 		logger.info(`Command: ${certbotCommand} ${args ? args.join(" ") : ""}`);
 
-		const result = await utils.execFile(certbotCommand, args, adds.opts);
-		logger.success(result);
-		return result;
+		try {
+			const result = await utils.execFile(certbotCommand, args, adds.opts);
+			logger.success(result);
+			return result;
+		} catch (err) {
+			throw publicCertbotError(err);
+		}
 	},
 
 	/**
@@ -884,7 +1023,7 @@ const internalCertificate = {
 		} catch (err) {
 			// Don't fail if file does not exist, so no need for action in the callback
 			fs.unlink(credentialsLocation, () => {});
-			throw err;
+			throw publicCertbotError(err);
 		}
 	},
 

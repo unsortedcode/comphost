@@ -1,11 +1,17 @@
 import { installPlugins } from "./lib/certbot.js";
 import utils from "./lib/utils.js";
+import internalNginx from "./internal/nginx.js";
 import { setup as logger } from "./logger.js";
 import authModel from "./models/auth.js";
 import certificateModel from "./models/certificate.js";
+import deadHostModel from "./models/dead_host.js";
+import proxyHostModel from "./models/proxy_host.js";
+import redirectionHostModel from "./models/redirection_host.js";
 import settingModel from "./models/setting.js";
+import streamModel from "./models/stream.js";
 import userModel from "./models/user.js";
 import userPermissionModel from "./models/user_permission.js";
+import { existsSync } from "fs";
 import fs from "fs/promises";
 
 export const isSetup = async () => {
@@ -161,4 +167,62 @@ const setupLogrotation = () => {
 	return runLogrotate();
 };
 
-export default () => setupDefaultUser().then(setupDefaultSettings).then(setupCertbotPlugins).then(setupLogrotation);
+/**
+ * Regenerate nginx configs for enabled hosts whose config file is missing.
+ *
+ * Host configs are written when a host is saved, not derived from the database at
+ * boot — so a CompHost instance brought up against an existing database without
+ * its /data/nginx directory (a database-only migration from a previous NPM box, a
+ * restored backup, a wiped volume) shows every host in the UI while serving none
+ * of them, with nothing to indicate why.
+ *
+ * Only missing files are written: an existing config is never overwritten, so
+ * hand-edited or error-renamed configs are left alone.
+ *
+ * @returns {Promise}
+ */
+const setupMissingHostConfigs = async () => {
+	const types = [
+		{ type: "proxy_host", model: proxyHostModel, expand: ["certificate", "access_list.[clients,items]"] },
+		{ type: "redirection_host", model: redirectionHostModel, expand: ["certificate"] },
+		{ type: "dead_host", model: deadHostModel, expand: ["certificate"] },
+		{ type: "stream", model: streamModel, expand: ["certificate"] },
+	];
+
+	let regenerated = 0;
+	for (const { type, model, expand } of types) {
+		try {
+			const hosts = await model
+				.query()
+				.where("is_deleted", 0)
+				.andWhere("enabled", 1)
+				.withGraphFetched(`[${expand.join(", ")}]`);
+
+			const missing = hosts.filter((host) => !existsSync(internalNginx.getConfigName(type, host.id)));
+			if (!missing.length) {
+				continue;
+			}
+			await internalNginx.bulkGenerateConfigs(type, missing);
+			regenerated += missing.length;
+			logger.info(`Regenerated ${missing.length} missing ${type} config(s)`);
+		} catch (err) {
+			// Never block boot over this — the UI still works, hosts just stay down.
+			logger.warn(`Could not regenerate ${type} configs: ${err.message}`);
+		}
+	}
+
+	if (regenerated) {
+		try {
+			await internalNginx.reload();
+		} catch (err) {
+			logger.warn(`Nginx reload after regenerating configs failed: ${err.message}`);
+		}
+	}
+};
+
+export default () =>
+	setupDefaultUser()
+		.then(setupDefaultSettings)
+		.then(setupCertbotPlugins)
+		.then(setupMissingHostConfigs)
+		.then(setupLogrotation);
