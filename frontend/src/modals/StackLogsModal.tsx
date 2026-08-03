@@ -6,7 +6,6 @@ import { Button } from "src/components";
 import { Xterm } from "src/components/Xterm/Xterm";
 import { useStack } from "src/hooks";
 import { T } from "src/locale";
-import AuthStore from "src/modules/AuthStore";
 
 const showStackLogsModal = (id: number) => {
 	EasyModal.show(StackLogsModal, { id });
@@ -28,7 +27,6 @@ const StackLogsModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		term.writeln(`\x1b[90mStreaming logs for ${name}…\x1b[0m`);
 
 		fetch(`/api/stacks/${id}/logs`, {
-			headers: { Authorization: `Bearer ${AuthStore.token?.token}` },
 			signal: controller.signal,
 		})
 			.then(async (res) => {

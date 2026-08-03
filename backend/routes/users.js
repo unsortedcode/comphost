@@ -4,6 +4,7 @@ import internalUser from "../internal/user.js";
 import Access from "../lib/access.js";
 import { isCI } from "../lib/config.js";
 import errs from "../lib/error.js";
+import { setSessionCookie } from "../lib/express/cookies.js";
 import jwtdecode from "../lib/express/jwt-decode.js";
 import userIdFromMe from "../lib/express/user-id-from-me.js";
 import apiValidator from "../lib/validator/api.js";
@@ -319,6 +320,9 @@ router
 			const result = await internalUser.loginAs(res.locals.access, {
 				id: Number.parseInt(req.params.user_id, 10),
 			});
+			// Push rather than replace: DELETE /tokens then steps back to the
+			// admin's own session instead of logging them out.
+			setSessionCookie(req, res, result, { impersonating: true });
 			res.status(200).send(result);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);

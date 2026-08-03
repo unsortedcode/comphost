@@ -33,11 +33,18 @@ function buildUrl({ url, params }: BuildUrlArgs) {
 	return apiUrl;
 }
 
-function buildAuthHeader(): Record<string, string> | undefined {
-	if (AuthStore.token) {
-		return { Authorization: `Bearer ${AuthStore.token.token}` };
-	}
-	return {};
+// The session cookie is HttpOnly and attached by the browser on same-origin
+// requests, so there is no Authorization header to build. Cookies do get sent
+// cross-site though, so writes carry a CSRF token read back out of its
+// (deliberately readable) cookie — the server compares the two.
+function readCookie(name: string): string | null {
+	const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+	return match ? decodeURIComponent(match[1]) : null;
+}
+
+function buildAuthHeader(): Record<string, string> {
+	const csrf = readCookie("comphost_csrf");
+	return csrf ? { "X-CSRF-Token": csrf } : {};
 }
 
 function buildBody(data?: Record<string, any>): string | undefined {

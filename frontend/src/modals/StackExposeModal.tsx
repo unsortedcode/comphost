@@ -7,7 +7,6 @@ import { exposeStackStreaming, getStackServices, type StackService } from "src/a
 import { Button } from "src/components";
 import { useStack } from "src/hooks";
 import { T } from "src/locale";
-import AuthStore from "src/modules/AuthStore";
 import { showObjectSuccess } from "src/notifications";
 
 const showStackExposeModal = (id: number) => {
@@ -83,7 +82,6 @@ const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
 					basicAuth: useBasicAuth ? { username: authUser, password: authPass } : undefined,
 				},
 				(line) => setProgress((p) => [...p, line]),
-				AuthStore.token?.token || "",
 			);
 			queryClient.invalidateQueries({ queryKey: ["proxy-hosts"] });
 			queryClient.invalidateQueries({ queryKey: ["stacks"] });

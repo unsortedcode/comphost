@@ -131,6 +131,12 @@ Your existing hosts keep working untouched. To start using the new half:
 - **Add your Cloudflare token** (Settings → Cloudflare) if you want DNS records
   created when you add a host.
 
+- **You'll be asked to log in again.** CompHost keeps the admin session in an
+  `HttpOnly` cookie instead of `localStorage`, so any session carried over from
+  NPM is dropped on first load. Scripts and API clients using
+  `Authorization: Bearer` are unaffected — that path works exactly as it does
+  upstream, CSRF checks included (they apply to cookie auth only).
+
 ---
 
 ## Rolling back

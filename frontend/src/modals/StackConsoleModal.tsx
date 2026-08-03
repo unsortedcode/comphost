@@ -7,7 +7,6 @@ import { Button } from "src/components";
 import { Xterm } from "src/components/Xterm/Xterm";
 import { useStack } from "src/hooks";
 import { T } from "src/locale";
-import AuthStore from "src/modules/AuthStore";
 
 const showStackConsoleModal = (id: number) => {
 	EasyModal.show(StackConsoleModal, { id });
@@ -34,9 +33,7 @@ const StackConsoleModal = EasyModal.create(({ id, visible, remove }: Props) => {
 
 	// Load the stack's services for the picker.
 	useEffect(() => {
-		fetch(`/api/stacks/${id}/services`, {
-			headers: { Authorization: `Bearer ${AuthStore.token?.token}` },
-		})
+		fetch(`/api/stacks/${id}/services`)
 			.then((r) => r.json())
 			.then((rows: Service[]) => {
 				setServices(rows || []);

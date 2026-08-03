@@ -145,3 +145,10 @@ unchanged and aren't repeated here — this is what the fork adds or fixes.
 - **docker-socket-proxy overlay** — optional hardening so the raw Docker socket
   isn't mounted.
 - **RBAC** — a `stacks` permission section wired into upstream's existing model.
+- **Cookie sessions** — the admin UI's token lives in an `HttpOnly` cookie rather
+  than `localStorage`, so script on the origin can't read it. Cookie-authenticated
+  writes carry a double-submit CSRF token. `Authorization: Bearer` is unchanged
+  for API clients.
+- **Hardened admin surface** — CSP and security headers on the admin interface
+  only, login rate limiting, single-use tickets for the terminal WebSocket
+  instead of a token in the URL, and TOTP QR codes generated in the browser.

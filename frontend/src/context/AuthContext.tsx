@@ -2,12 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import {
+	endSession,
 	getToken,
 	isTwoFactorChallenge,
 	loginAsUser,
 	refreshToken,
-	verify2FA,
 	type TokenResponse,
+	verify2FA,
 } from "src/api/backend";
 import AuthStore from "src/modules/AuthStore";
 
@@ -70,21 +71,30 @@ function AuthProvider({ children, tokenRefreshInterval = 5 * 60 * 1000 }: Props)
 
 	const loginAs = async (id: number) => {
 		const response = await loginAsUser(id);
-		AuthStore.add(response);
+		// The server pushed the session cookie; we only track the depth.
+		AuthStore.push(response);
 		queryClient.clear();
 		window.location.reload();
 	};
 
-	const logout = () => {
-		if (AuthStore.count() >= 2) {
-			AuthStore.drop();
-			queryClient.clear();
+	const logout = async () => {
+		// Only the server can clear an HttpOnly cookie. While impersonating this
+		// restores the admin's own session instead of ending it.
+		const wasImpersonating = AuthStore.impersonating;
+		try {
+			await endSession();
+		} catch {
+			// Even if the call fails, drop the local session so the UI doesn't
+			// pretend to still be logged in.
+		}
+		queryClient.clear();
+		if (wasImpersonating) {
+			AuthStore.pop();
 			window.location.reload();
 			return;
 		}
 		AuthStore.clear();
 		setAuthenticated(false);
-		queryClient.clear();
 	};
 
 	const refresh = async () => {

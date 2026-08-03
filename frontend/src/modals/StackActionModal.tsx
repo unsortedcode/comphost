@@ -1,5 +1,5 @@
-import type { Terminal } from "@xterm/xterm";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Terminal } from "@xterm/xterm";
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { useRef, useState } from "react";
 import Modal from "react-bootstrap/Modal";
@@ -9,9 +9,15 @@ import { Button } from "src/components";
 import { Xterm } from "src/components/Xterm/Xterm";
 import { useStack } from "src/hooks";
 import { T } from "src/locale";
-import AuthStore from "src/modules/AuthStore";
 
 /** Resolves when the modal is closed, so callers can clear their busy state. */
+// Same-origin fetch sends the HttpOnly session cookie automatically; writes
+// additionally need the CSRF token echoed from its readable cookie.
+const csrfHeader = (): Record<string, string> => {
+	const m = document.cookie.match(/(?:^|; )comphost_csrf=([^;]*)/);
+	return m ? { "X-CSRF-Token": decodeURIComponent(m[1]) } : {};
+};
+
 const showStackActionModal = (id: number, action: StackAction) =>
 	EasyModal.show(StackActionModal, { params: { id, action } });
 
@@ -40,7 +46,7 @@ const StackActionModal = EasyModal.create(({ params, visible, remove, resolve }:
 
 		fetch(`/api/stacks/${id}/stream/${action}`, {
 			method: "POST",
-			headers: { Authorization: `Bearer ${AuthStore.token?.token}` },
+			headers: csrfHeader(),
 			signal: controller.signal,
 		})
 			.then(async (res) => {

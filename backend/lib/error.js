@@ -1,6 +1,15 @@
 import _ from "lodash";
 
 const errs = {
+	AuthenticationRequiredError: function (message, previous) {
+		Error.captureStackTrace(this, this.constructor);
+		this.name = this.constructor.name;
+		this.previous = previous;
+		this.message = message || "Authentication required";
+		this.public = true;
+		this.status = 401;
+	},
+
 	PermissionError: function (_, previous) {
 		Error.captureStackTrace(this, this.constructor);
 		this.name = this.constructor.name;

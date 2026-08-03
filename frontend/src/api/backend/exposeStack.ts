@@ -1,3 +1,10 @@
+// Writes need the CSRF token echoed back from its readable cookie; the
+// session itself rides along in the HttpOnly cookie.
+const csrfHeader = (): Record<string, string> => {
+	const m = document.cookie.match(/(?:^|; )comphost_csrf=([^;]*)/);
+	return m ? { "X-CSRF-Token": decodeURIComponent(m[1]) } : {};
+};
+
 import * as api from "./base";
 import type { ProxyHost } from "./models";
 
@@ -34,11 +41,10 @@ export async function exposeStackStreaming(
 	id: number,
 	input: ExposeStackInput,
 	onProgress: (line: string) => void,
-	token: string,
 ): Promise<void> {
 	const res = await fetch(`/api/stacks/${id}/expose/stream`, {
 		method: "POST",
-		headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+		headers: { ...csrfHeader(), "Content-Type": "application/json" },
 		// The streaming endpoint takes the same snake_case body the API expects.
 		body: JSON.stringify({
 			service: input.service,

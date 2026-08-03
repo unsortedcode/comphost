@@ -1,5 +1,6 @@
 import express from "express";
 import internalToken from "../internal/token.js";
+import { clearSessionCookie, setSessionCookie } from "../lib/express/cookies.js";
 import jwtdecode from "../lib/express/jwt-decode.js";
 import apiValidator from "../lib/validator/api.js";
 import { debug, express as logger } from "../logger.js";
@@ -30,6 +31,8 @@ router
 				expiry: typeof req.query.expiry !== "undefined" ? req.query.expiry : null,
 				scope: typeof req.query.scope !== "undefined" ? req.query.scope : null,
 			});
+			// Keep the browser session cookie in step with the refreshed token.
+			setSessionCookie(req, res, data);
 			res.status(200).send(data);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
@@ -46,6 +49,7 @@ router
 		try {
 			const data = await apiValidator(getValidationSchema("/tokens", "post"), req.body);
 			const result = await internalToken.getTokenFromEmail(data);
+			setSessionCookie(req, res, result);
 			res.status(200).send(result);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
@@ -68,11 +72,23 @@ router
 		try {
 			const { challenge_token, code } = await apiValidator(getValidationSchema("/tokens/2fa", "post"), req.body);
 			const result = await internalToken.verify2FA(challenge_token, code);
+			setSessionCookie(req, res, result);
 			res.status(200).send(result);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
 			next(err);
 		}
 	});
+
+/**
+ * DELETE /tokens
+ *
+ * End the browser session. While impersonating another user this steps back to
+ * the original session instead of logging out, which is what the UI expects.
+ */
+router.route("/").delete((req, res) => {
+	const { restored } = clearSessionCookie(req, res);
+	res.status(200).send({ restored });
+});
 
 export default router;

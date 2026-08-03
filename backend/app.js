@@ -3,6 +3,7 @@ import compression from "compression";
 import express from "express";
 import fileUpload from "express-fileupload";
 import { isDebugMode } from "./lib/config.js";
+import { csrfGuard } from "./lib/express/cookies.js";
 import cors from "./lib/express/cors.js";
 import jwt from "./lib/express/jwt.js";
 import { debug, express as logger } from "./logger.js";
@@ -55,6 +56,7 @@ app.use((_, res, next) => {
 });
 
 app.use(jwt());
+app.use(csrfGuard());
 app.use("/", mainRoutes);
 
 // production error handler
