@@ -1,4 +1,5 @@
 import { IconSettings } from "@tabler/icons-react";
+import { CloudflareDnsField } from "src/components/Form";
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { Form, Formik } from "formik";
 import { type ReactNode, useState } from "react";
@@ -13,7 +14,7 @@ import {
 	SSLOptionsFields,
 } from "src/components";
 import { useDeadHost, useSetDeadHost } from "src/hooks";
-import { T } from "src/locale";
+import { T, TError } from "src/locale";
 import { showObjectSuccess } from "src/notifications";
 
 const showDeadHostModal = (id: number | "new") => {
@@ -40,7 +41,7 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		};
 
 		setDeadHost(payload, {
-			onError: (err: any) => setErrorMsg(<T id={err.message} />),
+			onError: (err: any) => setErrorMsg(<TError message={err.message} />),
 			onSuccess: () => {
 				showObjectSuccess("dead-host", "saved");
 				remove();
@@ -72,6 +73,7 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							hstsEnabled: data?.hstsEnabled,
 							hstsSubdomains: data?.hstsSubdomains,
 							meta: data?.meta || {},
+							cloudflare: false,
 						} as any
 					}
 					onSubmit={onSubmit}
@@ -132,6 +134,7 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
+													<CloudflareDnsField />
 											</div>
 											<div className="tab-pane" id="tab-ssl" role="tabpanel">
 												<SSLCertificateField

@@ -1,9 +1,8 @@
-import { useCheckVersion, useHealth } from "src/hooks";
+import { useHealth } from "src/hooks";
 import { T } from "src/locale";
 
 export function SiteFooter() {
 	const health = useHealth();
-	const { data: versionData } = useCheckVersion();
 
 	const getVersion = () => {
 		if (!health.data) {
@@ -40,6 +39,17 @@ export function SiteFooter() {
 								</a>
 							</li>
 							<li className="list-inline-item">
+								Stacks by{" "}
+								<a
+									href="https://unsortedcode.com"
+									rel="noreferrer"
+									target="_blank"
+									className="link-secondary"
+								>
+									Unsorted Code
+								</a>
+							</li>
+							<li className="list-inline-item">
 								Theme by{" "}
 								<a href="https://tabler.io" rel="noreferrer" target="_blank" className="link-secondary">
 									Tabler
@@ -56,19 +66,10 @@ export function SiteFooter() {
 									{getVersion()}{" "}
 								</a>
 							</li>
-							{versionData?.updateAvailable && versionData?.latest && (
-								<li className="list-inline-item">
-									<a
-										href={`https://github.com/NginxProxyManager/nginx-proxy-manager/releases/tag/${versionData.latest}`}
-										className="link-warning fw-bold"
-										target="_blank"
-										rel="noopener"
-										title={`New version ${versionData.latest} is available`}
-									>
-										<T id="update-available" data={{ latestVersion: versionData.latest }} />
-									</a>
-								</li>
-							)}
+							{/* Upstream "update available" badge is silenced in this fork: it compares
+							    our package version against nginx-proxy-manager's release tags, which
+							    use a different numbering scheme — it would always claim an update and
+							    point at a build older than what we run. */}
 						</ul>
 					</div>
 				</div>

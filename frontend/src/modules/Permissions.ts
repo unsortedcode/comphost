@@ -8,6 +8,7 @@ export const DEAD_HOSTS = "deadHosts";
 export const STREAMS = "streams";
 export const CERTIFICATES = "certificates";
 export const ACCESS_LISTS = "accessLists";
+export const STACKS = "stacks";
 
 export const MANAGE = "manage";
 export const VIEW = "view";
@@ -24,7 +25,8 @@ export type Section =
 	| typeof DEAD_HOSTS
 	| typeof STREAMS
 	| typeof CERTIFICATES
-	| typeof ACCESS_LISTS;
+	| typeof ACCESS_LISTS
+	| typeof STACKS;
 
 export type Permission = typeof MANAGE | typeof VIEW;
 

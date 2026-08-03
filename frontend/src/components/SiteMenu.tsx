@@ -1,5 +1,6 @@
 import {
 	IconBook,
+	IconBrandDocker,
 	IconDeviceDesktop,
 	IconHome,
 	IconLock,
@@ -20,6 +21,7 @@ import {
 	PROXY_HOSTS,
 	REDIRECTION_HOSTS,
 	type Section,
+	STACKS,
 	STREAMS,
 	VIEW,
 } from "src/modules/Permissions";
@@ -68,6 +70,13 @@ const menuItems: MenuItem[] = [
 				permission: VIEW,
 			},
 		],
+	},
+	{
+		to: "/stacks",
+		icon: IconBrandDocker,
+		label: "stacks",
+		permissionSection: STACKS,
+		permission: VIEW,
 	},
 	{
 		to: "/access",

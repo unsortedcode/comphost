@@ -6,7 +6,7 @@ import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
 import { updateAuth } from "src/api/backend";
 import { Button } from "src/components";
-import { intl, T } from "src/locale";
+import { intl, T, TError } from "src/locale";
 import { validateString } from "src/modules/Validations";
 
 const showSetPasswordModal = (id: number) => {
@@ -28,7 +28,7 @@ const SetPasswordModal = EasyModal.create(({ id, visible, remove }: Props) => {
 			await updateAuth(id, values.new);
 			remove();
 		} catch (err: any) {
-			setError(<T id={err.message} />);
+			setError(<TError message={err.message} />);
 		}
 		setIsSubmitting(false);
 		setSubmitting(false);

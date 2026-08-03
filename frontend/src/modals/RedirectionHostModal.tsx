@@ -1,4 +1,5 @@
 import { IconSettings } from "@tabler/icons-react";
+import { CloudflareDnsField } from "src/components/Form";
 import cn from "classnames";
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { Field, Form, Formik } from "formik";
@@ -14,7 +15,7 @@ import {
 	SSLOptionsFields,
 } from "src/components";
 import { useRedirectionHost, useSetRedirectionHost } from "src/hooks";
-import { T } from "src/locale";
+import { T, TError } from "src/locale";
 import { validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
 
@@ -42,7 +43,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 		};
 
 		setRedirectionHost(payload, {
-			onError: (err: any) => setErrorMsg(<T id={err.message} />),
+			onError: (err: any) => setErrorMsg(<TError message={err.message} />),
 			onSuccess: () => {
 				showObjectSuccess("redirection-host", "saved");
 				remove();
@@ -82,6 +83,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 							// Advanced tab
 							advancedConfig: data?.advancedConfig || "",
 							meta: data?.meta || {},
+							cloudflare: false,
 						} as any
 					}
 					onSubmit={onSubmit}
@@ -145,6 +147,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
+													<CloudflareDnsField />
 												<div className="row">
 													<div className="col-md-4">
 														<Field name="forwardScheme">

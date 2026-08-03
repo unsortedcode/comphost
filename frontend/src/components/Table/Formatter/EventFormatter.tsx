@@ -1,4 +1,15 @@
-import { IconArrowsCross, IconBolt, IconBoltOff, IconDisc, IconLock, IconShield, IconUser } from "@tabler/icons-react";
+import {
+	IconArchive,
+	IconArrowsCross,
+	IconBolt,
+	IconBoltOff,
+	IconBrandDocker,
+	IconDisc,
+	IconLock,
+	IconLogin2,
+	IconShield,
+	IconUser,
+} from "@tabler/icons-react";
 import cn from "classnames";
 import type { AuditLog } from "src/api/backend";
 import { useLocaleState } from "src/context";
@@ -17,8 +28,14 @@ const getEventValue = (event: AuditLog) => {
 			return event.meta?.incomingPort || "N/A";
 		case "certificate":
 			return event.meta?.domainNames?.join(", ") || event.meta?.niceName || "N/A";
+		case "stack":
+		case "backup-target":
+		case "registry-credential":
+			return event.meta?.name || "N/A";
 		default:
-			return `UNKNOWN EVENT TYPE: ${event.objectType}`;
+			// Degrade gracefully rather than printing "UNKNOWN EVENT TYPE": any future
+			// object type still shows something meaningful.
+			return event.meta?.name || event.meta?.domainNames?.join(", ") || event.objectType;
 	}
 };
 
@@ -57,6 +74,15 @@ const getIcon = (row: AuditLog) => {
 			break;
 		case "certificate":
 			ico = <IconShield size={16} className={c} />;
+			break;
+		case "stack":
+			ico = <IconBrandDocker size={16} className={c} />;
+			break;
+		case "backup-target":
+			ico = <IconArchive size={16} className={c} />;
+			break;
+		case "registry-credential":
+			ico = <IconLogin2 size={16} className={c} />;
 			break;
 	}
 

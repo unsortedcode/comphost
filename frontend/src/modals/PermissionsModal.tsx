@@ -8,7 +8,7 @@ import Modal from "react-bootstrap/Modal";
 import { setPermissions } from "src/api/backend";
 import { Button, Loading } from "src/components";
 import { useUser } from "src/hooks";
-import { T } from "src/locale";
+import { T, TError } from "src/locale";
 import styles from "./PermissionsModal.module.css";
 
 const showPermissionsModal = (id: number) => {
@@ -34,7 +34,7 @@ const PermissionsModal = EasyModal.create(({ id, visible, remove }: Props) => {
 			queryClient.invalidateQueries({ queryKey: ["users"] });
 			queryClient.invalidateQueries({ queryKey: ["user"] });
 		} catch (err: any) {
-			setErrorMsg(<T id={err.message} />);
+			setErrorMsg(<TError message={err.message} />);
 		}
 		setSubmitting(false);
 		setIsSubmitting(false);

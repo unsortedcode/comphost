@@ -131,11 +131,41 @@
 	"action.view-details": {
 		"defaultMessage": "View Details"
 	},
+	"auditlog.filter.action": {
+		"defaultMessage": "Event"
+	},
+	"auditlog.filter.all-actions": {
+		"defaultMessage": "All events"
+	},
+	"auditlog.filter.all-objects": {
+		"defaultMessage": "All objects"
+	},
+	"auditlog.filter.all-stacks": {
+		"defaultMessage": "All stacks"
+	},
+	"auditlog.filter.clear": {
+		"defaultMessage": "Clear filters"
+	},
+	"auditlog.filter.count": {
+		"defaultMessage": "{count} matching {count, plural, one {entry} other {entries}}"
+	},
+	"auditlog.filter.domain": {
+		"defaultMessage": "Domain…"
+	},
+	"auditlog.filter.object-type": {
+		"defaultMessage": "Object type"
+	},
+	"auditlog.filter.stack": {
+		"defaultMessage": "Stack"
+	},
 	"auditlogs": {
 		"defaultMessage": "Audit Logs"
 	},
 	"auto": {
 		"defaultMessage": "Auto"
+	},
+	"backup-target": {
+		"defaultMessage": "Backup Target"
 	},
 	"cancel": {
 		"defaultMessage": "Cancel"
@@ -244,6 +274,21 @@
 	},
 	"certificates.request.title": {
 		"defaultMessage": "Request a new Certificate"
+	},
+	"cloudflare.create-dns": {
+		"defaultMessage": "Create DNS record in Cloudflare"
+	},
+	"cloudflare.dns-elsewhere": {
+		"defaultMessage": "{domain} already has a {type} record pointing at {content}, not this server ({serverIp}). It will be left alone — a certificate request will fail until it points here."
+	},
+	"cloudflare.dns-missing": {
+		"defaultMessage": "No record exists yet for {domains} — it will be created pointing at this server."
+	},
+	"cloudflare.dns-no-zone": {
+		"defaultMessage": "{domain} isn't in any Cloudflare zone this token can see, so no record can be created for it."
+	},
+	"cloudflare.dns-ok": {
+		"defaultMessage": "{domains} already points at this server."
 	},
 	"column.access": {
 		"defaultMessage": "Access"
@@ -536,20 +581,38 @@
 	"object.empty": {
 		"defaultMessage": "There are no {objects}"
 	},
+	"object.event.backed-up": {
+		"defaultMessage": "Backed up {object}"
+	},
 	"object.event.created": {
 		"defaultMessage": "Created {object}"
 	},
 	"object.event.deleted": {
 		"defaultMessage": "Deleted {object}"
 	},
+	"object.event.deployed": {
+		"defaultMessage": "Deployed {object}"
+	},
 	"object.event.disabled": {
 		"defaultMessage": "Disabled {object}"
+	},
+	"object.event.downed": {
+		"defaultMessage": "Stopped & removed {object}"
 	},
 	"object.event.enabled": {
 		"defaultMessage": "Enabled {object}"
 	},
+	"object.event.exposed": {
+		"defaultMessage": "Exposed {object}"
+	},
 	"object.event.renewed": {
 		"defaultMessage": "Renewed {object}"
+	},
+	"object.event.restarted": {
+		"defaultMessage": "Restarted {object}"
+	},
+	"object.event.stopped": {
+		"defaultMessage": "Stopped {object}"
 	},
 	"object.event.updated": {
 		"defaultMessage": "Updated {object}"
@@ -641,6 +704,9 @@
 	"redirection-hosts.http-code.308": {
 		"defaultMessage": "308 Permanent redirect"
 	},
+	"registry-credential": {
+		"defaultMessage": "Registry Login"
+	},
 	"role.admin": {
 		"defaultMessage": "Administrator"
 	},
@@ -655,6 +721,66 @@
 	},
 	"settings": {
 		"defaultMessage": "Settings"
+	},
+	"settings.backup": {
+		"defaultMessage": "Backup"
+	},
+	"settings.backup.add-target": {
+		"defaultMessage": "Add Target"
+	},
+	"settings.backup.config-help": {
+		"defaultMessage": "Download a backup of CompHost's configuration: database, JWT keys, generated nginx configs, and each stack's compose file + .env. (Stack volume data is handled by scheduled volume backups.)"
+	},
+	"settings.backup.cron": {
+		"defaultMessage": "Schedule (cron)"
+	},
+	"settings.backup.cron-hint": {
+		"defaultMessage": "e.g. 0 3 * * * for nightly at 3am. Leave blank for manual-only."
+	},
+	"settings.backup.download-config": {
+		"defaultMessage": "Download Config Backup"
+	},
+	"settings.backup.public-key": {
+		"defaultMessage": "Public key — add this to the target host's ~/.ssh/authorized_keys"
+	},
+	"settings.backup.targets": {
+		"defaultMessage": "Volume Backup Targets"
+	},
+	"settings.backup.targets-help": {
+		"defaultMessage": "Configure S3 or SSH destinations. Set a schedule to back up all stack volumes automatically, or trigger a backup per-stack from the stack actions."
+	},
+	"settings.backup.test": {
+		"defaultMessage": "Test"
+	},
+	"settings.cloudflare": {
+		"defaultMessage": "Cloudflare"
+	},
+	"settings.cloudflare.configured": {
+		"defaultMessage": "Configured"
+	},
+	"settings.cloudflare.email": {
+		"defaultMessage": "Account Email (Global API Key only)"
+	},
+	"settings.cloudflare.email-hint": {
+		"defaultMessage": "Leave blank if you pasted a scoped API Token. Only fill this in when using a legacy Global API Key — those need the account email and cannot be used as a token."
+	},
+	"settings.cloudflare.help": {
+		"defaultMessage": "Store a Cloudflare credential so CompHost can create DNS records when you expose a stack. Recommended: a scoped API Token (My Profile → API Tokens) with Zone:DNS:Edit + Zone:Read. A legacy Global API Key also works, but you must supply the account email below."
+	},
+	"settings.cloudflare.proxied": {
+		"defaultMessage": "Proxy records through Cloudflare (orange cloud)"
+	},
+	"settings.cloudflare.public-ip": {
+		"defaultMessage": "Public IP (optional)"
+	},
+	"settings.cloudflare.saved": {
+		"defaultMessage": "Cloudflare settings saved."
+	},
+	"settings.cloudflare.token": {
+		"defaultMessage": "API Token"
+	},
+	"settings.cloudflare.token-hint": {
+		"defaultMessage": "Stored securely and never shown again. Leave blank to keep the existing token."
 	},
 	"settings.default-site": {
 		"defaultMessage": "Default Site"
@@ -680,6 +806,45 @@
 	"settings.default-site.redirect": {
 		"defaultMessage": "Redirect"
 	},
+	"settings.registries": {
+		"defaultMessage": "Registries"
+	},
+	"settings.registries.add": {
+		"defaultMessage": "Add Registry Login"
+	},
+	"settings.registries.help": {
+		"defaultMessage": "Add private container-registry logins so stacks can pull private images. Creating one runs docker login on the server to validate it; the token is stored securely and never shown again."
+	},
+	"settings.secure-admin": {
+		"defaultMessage": "Secure Admin Panel"
+	},
+	"settings.secure-admin.domain": {
+		"defaultMessage": "Admin Domain"
+	},
+	"settings.secure-admin.domain-required": {
+		"defaultMessage": "A domain is required"
+	},
+	"settings.secure-admin.done": {
+		"defaultMessage": "This admin panel is secured with HTTPS."
+	},
+	"settings.secure-admin.firewall-hint": {
+		"defaultMessage": "Once HTTPS works, you can firewall port 81 to localhost — access the panel via your domain on 443."
+	},
+	"settings.secure-admin.help": {
+		"defaultMessage": "Request a Let's Encrypt certificate for a domain and serve this admin panel over HTTPS. The domain must already point at this server and port 80 must be reachable."
+	},
+	"settings.secure-admin.port": {
+		"defaultMessage": "Admin Port"
+	},
+	"settings.secure-admin.reachable": {
+		"defaultMessage": "Reachable"
+	},
+	"settings.secure-admin.submit": {
+		"defaultMessage": "Request Certificate & Secure"
+	},
+	"settings.secure-admin.test": {
+		"defaultMessage": "Test Reachability"
+	},
 	"setup.preamble": {
 		"defaultMessage": "Get started by creating your admin account."
 	},
@@ -691,6 +856,288 @@
 	},
 	"ssl-certificate": {
 		"defaultMessage": "SSL Certificate"
+	},
+	"stack": {
+		"defaultMessage": "Stack"
+	},
+	"stack.action.check-updates": {
+		"defaultMessage": "Check for updates"
+	},
+	"stack.action.console": {
+		"defaultMessage": "Console"
+	},
+	"stack.action.deploy": {
+		"defaultMessage": "Deploy (up)"
+	},
+	"stack.action.down": {
+		"defaultMessage": "Down (remove)"
+	},
+	"stack.action.env": {
+		"defaultMessage": "Environment (.env)"
+	},
+	"stack.action.expose": {
+		"defaultMessage": "Expose on domain"
+	},
+	"stack.action.logs": {
+		"defaultMessage": "Logs"
+	},
+	"stack.action.mounts": {
+		"defaultMessage": "Backup settings"
+	},
+	"stack.action.restart": {
+		"defaultMessage": "Restart"
+	},
+	"stack.action.running": {
+		"defaultMessage": "Working…"
+	},
+	"stack.action.status-settings": {
+		"defaultMessage": "Status settings"
+	},
+	"stack.action.stop": {
+		"defaultMessage": "Stop"
+	},
+	"stack.action.stream": {
+		"defaultMessage": "Expose TCP/UDP port"
+	},
+	"stack.action.update": {
+		"defaultMessage": "Update (pull & up)"
+	},
+	"stack.adopt.action": {
+		"defaultMessage": "Adopt existing"
+	},
+	"stack.adopt.browse-empty": {
+		"defaultMessage": "No sub-directories here."
+	},
+	"stack.adopt.browse-go": {
+		"defaultMessage": "Go"
+	},
+	"stack.adopt.browse-help": {
+		"defaultMessage": "Walk the directories CompHost can see and pick the folder holding a compose file. Use this for projects that aren't running right now — those never show up under Detected."
+	},
+	"stack.adopt.browse-truncated": {
+		"defaultMessage": "Only the first 500 entries are shown. Type a path above to jump straight to a directory."
+	},
+	"stack.adopt.done": {
+		"defaultMessage": "Adopted"
+	},
+	"stack.adopt.help": {
+		"defaultMessage": "Compose projects already running on this host that CompHost does not manage yet. Adopting registers a project in place — no files are moved and the running containers are untouched."
+	},
+	"stack.adopt.managed": {
+		"defaultMessage": "already managed"
+	},
+	"stack.adopt.name-hint": {
+		"defaultMessage": "Lowercase letters, numbers, - and _ only. This becomes the compose project name CompHost uses."
+	},
+	"stack.adopt.none": {
+		"defaultMessage": "No unmanaged compose projects found on this host."
+	},
+	"stack.adopt.not-visible": {
+		"defaultMessage": "Compose file not visible to CompHost — mount this path into the container to adopt it."
+	},
+	"stack.adopt.select": {
+		"defaultMessage": "Select"
+	},
+	"stack.adopt.tab.browse": {
+		"defaultMessage": "Browse…"
+	},
+	"stack.adopt.tab.detected": {
+		"defaultMessage": "Detected"
+	},
+	"stack.adopt.title": {
+		"defaultMessage": "Adopt existing compose projects"
+	},
+	"stack.adopt.use-current": {
+		"defaultMessage": "Adopt this directory ({file})"
+	},
+	"stack.compose": {
+		"defaultMessage": "Compose File"
+	},
+	"stack.console": {
+		"defaultMessage": "Console"
+	},
+	"stack.console.connect": {
+		"defaultMessage": "Connect"
+	},
+	"stack.console.reconnect": {
+		"defaultMessage": "Reconnect"
+	},
+	"stack.env.help": {
+		"defaultMessage": "Values here are written to this stack's .env file, which compose reads when it deploys. Variables your compose file references are listed automatically."
+	},
+	"stack.env.missing": {
+		"defaultMessage": "referenced by compose but not set"
+	},
+	"stack.env.missing-warning": {
+		"defaultMessage": "{count} variable(s) referenced by the compose file are not set in .env — compose will fall back to its inline default (or empty)."
+	},
+	"stack.env.none": {
+		"defaultMessage": "This compose file doesn't reference any variables, and no .env exists yet."
+	},
+	"stack.env.redeploy-hint": {
+		"defaultMessage": "Redeploy the stack for changes to take effect."
+	},
+	"stack.env.title": {
+		"defaultMessage": "Environment variables"
+	},
+	"stack.env.unused": {
+		"defaultMessage": "unused"
+	},
+	"stack.env.value": {
+		"defaultMessage": "Value"
+	},
+	"stack.env.variable": {
+		"defaultMessage": "Variable"
+	},
+	"stack.expose.basic-auth": {
+		"defaultMessage": "Protect with HTTP basic auth"
+	},
+	"stack.expose.cloudflare": {
+		"defaultMessage": "Point DNS at this server via Cloudflare"
+	},
+	"stack.expose.domains": {
+		"defaultMessage": "Domain Names"
+	},
+	"stack.expose.domains.hint": {
+		"defaultMessage": "Comma-separate multiple domains"
+	},
+	"stack.expose.help": {
+		"defaultMessage": "Publish a running service on a domain. CompHost attaches it to the proxy network and creates a proxy host — no terminal needed."
+	},
+	"stack.expose.port": {
+		"defaultMessage": "Container Port"
+	},
+	"stack.expose.progress": {
+		"defaultMessage": "Progress"
+	},
+	"stack.expose.scheme": {
+		"defaultMessage": "Forward Scheme"
+	},
+	"stack.expose.service": {
+		"defaultMessage": "Service"
+	},
+	"stack.expose.ssl": {
+		"defaultMessage": "Request Let's Encrypt certificate (HTTPS)"
+	},
+	"stack.expose.submit": {
+		"defaultMessage": "Expose"
+	},
+	"stack.expose.target": {
+		"defaultMessage": "Proxy target:"
+	},
+	"stack.expose.title": {
+		"defaultMessage": "Expose service"
+	},
+	"stack.exposures": {
+		"defaultMessage": "Exposed as"
+	},
+	"stack.import-run": {
+		"defaultMessage": "Import from docker run"
+	},
+	"stack.logs": {
+		"defaultMessage": "Logs"
+	},
+	"stack.mounts.backup": {
+		"defaultMessage": "Back up"
+	},
+	"stack.mounts.help": {
+		"defaultMessage": "Choose a backup target and method for each of this stack's volumes and bind mounts. Named volumes are snapshotted with tar; bind mounts default to rsync, which is incremental and preserves the directory layout."
+	},
+	"stack.mounts.method": {
+		"defaultMessage": "Method"
+	},
+	"stack.mounts.none": {
+		"defaultMessage": "This stack has no named volumes or bind mounts."
+	},
+	"stack.mounts.source": {
+		"defaultMessage": "Volume / path"
+	},
+	"stack.mounts.target": {
+		"defaultMessage": "Target"
+	},
+	"stack.mounts.title": {
+		"defaultMessage": "Backup settings"
+	},
+	"stack.name": {
+		"defaultMessage": "Name"
+	},
+	"stack.name.hint": {
+		"defaultMessage": "Lowercase letters, numbers, hyphens and underscores"
+	},
+	"stack.status-settings.effect": {
+		"defaultMessage": "{count} {count, plural, one {service} other {services}} will be ignored. The status badge shows what's still counted."
+	},
+	"stack.status-settings.help": {
+		"defaultMessage": "Pick services to leave out of this stack's status. A one-shot init or migration container exits 0 by design, which would otherwise keep the stack showing as Partial."
+	},
+	"stack.status-settings.none": {
+		"defaultMessage": "No services found. Deploy the stack first."
+	},
+	"stack.status-settings.title": {
+		"defaultMessage": "Status settings"
+	},
+	"stack.status.created": {
+		"defaultMessage": "Created"
+	},
+	"stack.status.draft": {
+		"defaultMessage": "Draft"
+	},
+	"stack.status.exited": {
+		"defaultMessage": "Exited"
+	},
+	"stack.status.partial": {
+		"defaultMessage": "Partial"
+	},
+	"stack.status.running": {
+		"defaultMessage": "Running"
+	},
+	"stack.status.unknown": {
+		"defaultMessage": "Unknown"
+	},
+	"stack.stream.help": {
+		"defaultMessage": "Publish a non-HTTP service (game server, database, …) on a raw port. CompHost attaches it to the proxy network and creates an nginx stream host."
+	},
+	"stack.stream.incoming-hint": {
+		"defaultMessage": "The port clients connect to on this server."
+	},
+	"stack.stream.incoming-port": {
+		"defaultMessage": "Incoming port"
+	},
+	"stack.stream.submit": {
+		"defaultMessage": "Expose port"
+	},
+	"stack.stream.title": {
+		"defaultMessage": "Expose TCP/UDP port"
+	},
+	"stack.updates.available": {
+		"defaultMessage": "update available"
+	},
+	"stack.updates.how-to-apply": {
+		"defaultMessage": "Use the Update action to pull the new images and redeploy."
+	},
+	"stack.updates.image": {
+		"defaultMessage": "Image"
+	},
+	"stack.updates.recheck": {
+		"defaultMessage": "Check again"
+	},
+	"stack.updates.registry": {
+		"defaultMessage": "Registry"
+	},
+	"stack.updates.running": {
+		"defaultMessage": "Running"
+	},
+	"stack.updates.service": {
+		"defaultMessage": "Service"
+	},
+	"stack.updates.title": {
+		"defaultMessage": "Image updates"
+	},
+	"stack.updates.up-to-date": {
+		"defaultMessage": "All images are up to date."
+	},
+	"stacks": {
+		"defaultMessage": "Stacks"
 	},
 	"stream": {
 		"defaultMessage": "Stream"

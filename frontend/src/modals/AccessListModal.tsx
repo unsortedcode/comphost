@@ -7,7 +7,7 @@ import Modal from "react-bootstrap/Modal";
 import type { AccessList, AccessListClient, AccessListItem } from "src/api/backend";
 import { AccessClientFields, BasicAuthFields, Button, Loading } from "src/components";
 import { useAccessList, useSetAccessList } from "src/hooks";
-import { intl, T } from "src/locale";
+import { intl, T, TError } from "src/locale";
 import { validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
 
@@ -70,7 +70,7 @@ const AccessListModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		}));
 
 		setAccessList(payload, {
-			onError: (err: any) => setErrorMsg(<T id={err.message} />),
+			onError: (err: any) => setErrorMsg(<TError message={err.message} />),
 			onSuccess: () => {
 				showObjectSuccess("access-list", "saved");
 				remove();

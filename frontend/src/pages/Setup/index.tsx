@@ -68,8 +68,8 @@ export default function Setup() {
 				<div className="text-center mb-4">
 					<img
 						className={styles.logo}
-						src="/images/logo-text-horizontal-grey.png"
-						alt="Nginx Proxy Manager"
+						src="/images/logo-bold-horizontal-grey.svg"
+						alt="CompHost"
 					/>
 				</div>
 				<div className="card card-md">

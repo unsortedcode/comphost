@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
 import { Button } from "src/components";
-import { T } from "src/locale";
+import { T, TError } from "src/locale";
 
 interface ShowProps {
 	title?: ReactNode;
@@ -38,7 +38,7 @@ const DeleteConfirmModal = EasyModal.create(
 					queryClient.invalidateQueries({ queryKey: inv });
 				});
 			} catch (err: any) {
-				setError(<T id={err.message} />);
+				setError(<TError message={err.message} />);
 			}
 			setIsSubmitting(false);
 		};

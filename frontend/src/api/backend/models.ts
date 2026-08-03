@@ -16,6 +16,43 @@ export interface UserPermissions {
 	streams: string;
 	accessLists: string;
 	certificates: string;
+	stacks: string;
+}
+
+export interface StackExposure {
+	type: "proxy" | "stream";
+	id: number;
+	service: string | null;
+	domains?: string[];
+	incomingPort?: number;
+	target: string;
+	ssl?: boolean;
+	protocols?: string[];
+}
+
+export interface Stack {
+	id: number;
+	createdOn: string;
+	modifiedOn: string;
+	ownerUserId: number;
+	name: string;
+	composeFileName: string;
+	/** Status code: 0 unknown, 1 draft, 2 created, 3 running, 4 exited, 5 partial */
+	status: number;
+	/** Raw aggregate from `docker compose ls`, e.g. "exited(1), running(2)". */
+	statusText?: string | null;
+	/** Services excluded from the status calculation (one-shot containers). */
+	ignoreServices?: string[];
+	meta: Record<string, any>;
+	/** Present on single-stack GET; the compose YAML read from disk */
+	composeContent?: string;
+	/** Domains/ports this stack is published as (proxy + stream hosts). */
+	exposures?: StackExposure[];
+	/** Cached count from the last image-update check (null = never checked). */
+	updateCount?: number | null;
+	updateCheckedOn?: string | null;
+	// Expansions:
+	owner?: User;
 }
 
 export interface User {

@@ -6,7 +6,7 @@ import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
 import { createCertificate } from "src/api/backend";
 import { Button, DNSProviderFields, DomainNamesField } from "src/components";
-import { T } from "src/locale";
+import { T, TError } from "src/locale";
 import { showObjectSuccess } from "src/notifications";
 
 const showDNSCertificateModal = () => {
@@ -28,7 +28,7 @@ const DNSCertificateModal = EasyModal.create(({ visible, remove }: InnerModalPro
 			showObjectSuccess("certificate", "saved");
 			remove();
 		} catch (err: any) {
-			setErrorMsg(<T id={err.message} />);
+			setErrorMsg(<TError message={err.message} />);
 		}
 		queryClient.invalidateQueries({ queryKey: ["certificates"] });
 		setIsSubmitting(false);

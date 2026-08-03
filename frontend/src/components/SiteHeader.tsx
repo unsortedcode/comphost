@@ -36,7 +36,12 @@ export function SiteHeader() {
 								alt="Logo"
 							/>
 						</div>
-						Nginx Proxy Manager
+						{/* One span so the brand is a single flex item — otherwise the flex
+						    container collapses the space before the italic part. */}
+						<span>
+							Nginx Proxy Manager{" "}
+							<em>with Stacks</em>
+						</span>
 					</NavLink>
 				</div>
 				<div className="navbar-nav flex-row order-md-last">

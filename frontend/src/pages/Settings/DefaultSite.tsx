@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import { Button, Loading } from "src/components";
 import { useSetSetting, useSetting } from "src/hooks";
-import { intl, T } from "src/locale";
+import { intl, T, TError } from "src/locale";
 import { validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
 
@@ -29,7 +29,7 @@ export default function DefaultSite() {
 		};
 
 		setSetting(payload, {
-			onError: (err: any) => setErrorMsg(<T id={err.message} />),
+			onError: (err: any) => setErrorMsg(<TError message={err.message} />),
 			onSuccess: () => {
 				showObjectSuccess("setting", "saved");
 			},

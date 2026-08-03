@@ -5,7 +5,7 @@ import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
 import { Button, Loading, SSLCertificateField, SSLOptionsFields } from "src/components";
 import { useSetStream, useStream } from "src/hooks";
-import { intl, T } from "src/locale";
+import { intl, T, TError } from "src/locale";
 import { validateNumber, validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
 
@@ -33,7 +33,7 @@ const StreamModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		};
 
 		setStream(payload, {
-			onError: (err: any) => setErrorMsg(<T id={err.message} />),
+			onError: (err: any) => setErrorMsg(<TError message={err.message} />),
 			onSuccess: () => {
 				showObjectSuccess("stream", "saved");
 				remove();

@@ -110,6 +110,13 @@ label.row {
 	position: static;
 }
 
+/* Tabler's dark-theme dropdown dividers use a ~14%-opacity border that is nearly
+   invisible, so action-menu separators don't read. Use the solid border color. */
+.dropdown-divider {
+	border-top-color: var(--tblr-border-color);
+	opacity: 1;
+}
+
 /* Fix for Tabler scrollbar compensation */
 @media (min-width: 992px) {
   :host, :root {

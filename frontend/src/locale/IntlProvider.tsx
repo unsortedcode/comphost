@@ -139,6 +139,18 @@ const T = ({
   );
 };
 
+// Backend errors arrive as either an i18n key ("error.invalid-domain") or real
+// prose — certbot's reason for a failed challenge, a compose parser message.
+// Feeding prose to formatMessage prints the whole sentence as its own id and,
+// worse, parses any braces in it as ICU syntax. So translate only what we have a
+// translation for, and render the rest verbatim.
+const TError = ({ message }: { message?: string | null }) => {
+  if (!message) {
+    return null;
+  }
+  return message in intl.messages ? <T id={message} /> : <span>{message}</span>;
+};
+
 //console.log("L:", localeOptions);
 
-export { localeOptions, getFlagCodeForLocale, getLocale, createIntl, changeLocale, intl, T };
+export { localeOptions, getFlagCodeForLocale, getLocale, createIntl, changeLocale, intl, T, TError };

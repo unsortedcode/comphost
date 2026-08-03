@@ -90,4 +90,14 @@
  <polygon class="g" points="283 88.2 283 62.5 261 49.6 239 62.5 239 88.2 261 101"/>
  <polygon class="ao" points="478 424 478 398 456 386 433 398 433 424 456 437"/>
  <polygon class="g" points="89 424 89 398 66.9 386 44.7 398 44.7 424 66.9 437"/>
+ <!-- CompHost: docker-compose "stack" badge overlay (npm + stacks) -->
+ <g>
+  <circle cx="408" cy="500" r="99" fill="#ffffff"/>
+  <circle cx="408" cy="500" r="87" fill="#2496ed"/>
+  <g transform="translate(408,500) scale(4.5) translate(-12,-12)" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+   <path d="M12 3 L21 7.5 L12 12 L3 7.5 Z"/>
+   <path d="M3 12 L12 16.5 L21 12"/>
+   <path d="M3 16.5 L12 21 L21 16.5"/>
+  </g>
+ </g>
 </svg>

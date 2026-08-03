@@ -6,7 +6,7 @@ import Modal from "react-bootstrap/Modal";
 import { renewCertificate } from "src/api/backend";
 import { Button, Loading } from "src/components";
 import { useCertificate } from "src/hooks";
-import { T } from "src/locale";
+import { T, TError } from "src/locale";
 import { showObjectSuccess } from "src/notifications";
 
 interface Props extends InnerModalProps {
@@ -36,7 +36,7 @@ const RenewCertificateModal = EasyModal.create(({ id, visible, remove }: Props) 
 				remove();
 			})
 			.catch((err: any) => {
-				setErrorMsg(<T id={err.message} />);
+				setErrorMsg(<TError message={err.message} />);
 			})
 			.finally(() => {
 				setIsSubmitting(false);
