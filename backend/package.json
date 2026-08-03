@@ -1,6 +1,6 @@
 {
 	"name": "comphost",
-	"version": "0.5.2",
+	"version": "0.9.0",
 	"description": "A beautiful interface for creating Nginx endpoints",
 	"author": "Jamie Curnow <jc@jc21.com>",
 	"license": "MIT",

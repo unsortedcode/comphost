@@ -57,7 +57,7 @@ export function SiteFooter() {
 							</li>
 							<li className="list-inline-item">
 								<a
-									href={`https://github.com/NginxProxyManager/nginx-proxy-manager/releases/tag/${getVersion()}`}
+									href={`https://github.com/unsortedcode/comphost/releases/tag/${getVersion()}`}
 									className="link-secondary"
 									target="_blank"
 									rel="noopener"
