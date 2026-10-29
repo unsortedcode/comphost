@@ -26,6 +26,18 @@ const certbotCommand = "certbot";
 const certbotLogsDir = "/data/logs";
 const certbotWorkDir = "/tmp/letsencrypt-lib";
 
+const credentialsDir = "/etc/letsencrypt/credentials";
+
+/**
+ * A Cloudflare DNS-01 certificate with no credentials of its own uses the
+ * token saved under Settings → Cloudflare. The file is rebuilt from it before
+ * every issue and renewal, so rotating the token there covers every such cert.
+ * @param   {Object}  meta  certificate meta, credentials included
+ * @returns {boolean}
+ */
+const usesSavedCloudflare = (meta) =>
+	!!meta?.dns_challenge && meta.dns_provider === "cloudflare" && !meta.dns_provider_credentials?.trim();
+
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted", "meta.dns_provider_credentials"];
 };
@@ -247,6 +259,11 @@ const internalCertificate = {
 	create: async (access, data) => {
 		await access.can("certificates:create", data);
 		data.owner_user_id = access.token.getUserId(1);
+
+		// Fail before anything is stored if the saved token is needed but absent.
+		if (data.provider === "letsencrypt" && usesSavedCloudflare(data.meta)) {
+			await internalCloudflare.certbotCredentials();
+		}
 
 		if (data.provider === "letsencrypt") {
 			data.nice_name = data.domain_names.join(", ");
@@ -956,6 +973,25 @@ const internalCertificate = {
 	},
 
 	/**
+	 * Write the certbot credentials file for a DNS-01 certificate: its own
+	 * credentials, or for a saved-token Cloudflare cert the current token.
+	 * @param   {Number}  certificateId
+	 * @param   {Object}  meta  certificate meta, credentials included
+	 * @returns {Promise<string>}  the file's path
+	 */
+	writeDnsCredentials: async (certificateId, meta) => {
+		const content = usesSavedCloudflare(meta)
+			? await internalCloudflare.certbotCredentials()
+			: meta.dns_provider_credentials;
+		const location = `${credentialsDir}/credentials-${certificateId}`;
+		fs.mkdirSync(credentialsDir, { recursive: true });
+		fs.writeFileSync(location, content, { mode: 0o600 });
+		return location;
+	},
+
+	usesSavedCloudflare,
+
+	/**
 	 * @param   {Object}   certificate  the certificate row
 	 * @param   {String}   email        the email address to use for registration
 	 * @returns {Promise}
@@ -967,9 +1003,7 @@ const internalCertificate = {
 			`Requesting LetsEncrypt certificates via ${dnsPlugin.name} for Cert #${certificate.id}: ${certificate.domain_names.join(", ")}`,
 		);
 
-		const credentialsLocation = `/etc/letsencrypt/credentials/credentials-${certificate.id}`;
-		fs.mkdirSync("/etc/letsencrypt/credentials", { recursive: true });
-		fs.writeFileSync(credentialsLocation, certificate.meta.dns_provider_credentials, { mode: 0o600 });
+		const credentialsLocation = await internalCertificate.writeDnsCredentials(certificate.id, certificate.meta);
 
 		// Whether the plugin has a --<name>-credentials argument
 		const hasConfigArg = certificate.meta.dns_provider !== "route53";
@@ -1119,6 +1153,13 @@ const internalCertificate = {
 		logger.info(
 			`Renewing LetsEncrypt certificates via ${dnsPlugin.name} for Cert #${certificate.id}: ${certificate.domain_names.join(", ")}`,
 		);
+
+		// `certificate` comes from get(), which omits the credentials, so look at
+		// the stored row to tell a saved-token cert from one with its own.
+		const stored = await certificateModel.query().findById(certificate.id);
+		if (usesSavedCloudflare(stored?.meta)) {
+			await internalCertificate.writeDnsCredentials(certificate.id, stored.meta);
+		}
 
 		const args = [
 			"renew",

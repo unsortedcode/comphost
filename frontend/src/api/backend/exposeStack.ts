@@ -19,6 +19,8 @@ export interface ExposeStackInput {
 	certificateId?: number;
 	/** Point DNS at this server via Cloudflare (requires a configured token). */
 	cloudflare?: boolean;
+	/** With certificate "new": validate over DNS-01 using the saved Cloudflare token. */
+	dnsChallenge?: boolean;
 	/** Inline HTTP basic auth. */
 	basicAuth?: { username: string; password: string };
 	accessListId?: number;
@@ -55,6 +57,7 @@ export async function exposeStackStreaming(
 			certificate: input.certificate,
 			certificate_id: input.certificateId,
 			cloudflare: input.cloudflare,
+			dns_challenge: input.dnsChallenge,
 			access_list_id: input.accessListId,
 			basic_auth: input.basicAuth,
 		}),

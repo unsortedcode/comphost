@@ -2,8 +2,8 @@ import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-import { useQueryClient } from "@tanstack/react-query";
-import { exposeStackStreaming, getStackServices, type StackService } from "src/api/backend";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { exposeStackStreaming, getCloudflare, getStackServices, type StackService } from "src/api/backend";
 import { Button } from "src/components";
 import { useStack } from "src/hooks";
 import { T } from "src/locale";
@@ -27,6 +27,8 @@ const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const [scheme, setScheme] = useState("http");
 	const [requestCert, setRequestCert] = useState(false);
 	const [useCloudflare, setUseCloudflare] = useState(false);
+	const [dnsChallenge, setDnsChallenge] = useState(false);
+	const { data: cloudflare } = useQuery({ queryKey: ["cloudflare-config"], queryFn: getCloudflare, staleTime: 60_000 });
 	const [useBasicAuth, setUseBasicAuth] = useState(false);
 	const [authUser, setAuthUser] = useState("");
 	const [authPass, setAuthPass] = useState("");
@@ -78,6 +80,7 @@ const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
 					domainNames,
 					forwardScheme: scheme,
 					certificate: requestCert ? "new" : undefined,
+					dnsChallenge: (requestCert && dnsChallenge && cloudflare?.configured) || undefined,
 					cloudflare: useCloudflare || undefined,
 					basicAuth: useBasicAuth ? { username: authUser, password: authPass } : undefined,
 				},
@@ -176,6 +179,12 @@ const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
 						<input className="form-check-input" type="checkbox" checked={requestCert} onChange={(e) => setRequestCert(e.target.checked)} />
 						<span className="form-check-label"><T id="stack.expose.ssl" /></span>
 					</label>
+					{requestCert && cloudflare?.configured && (
+						<label className="form-check ms-4">
+							<input className="form-check-input" type="checkbox" checked={dnsChallenge} onChange={(e) => setDnsChallenge(e.target.checked)} />
+							<span className="form-check-label"><T id="stack.expose.dns-challenge" /></span>
+						</label>
+					)}
 					<label className="form-check">
 						<input className="form-check-input" type="checkbox" checked={useCloudflare} onChange={(e) => setUseCloudflare(e.target.checked)} />
 						<span className="form-check-label"><T id="stack.expose.cloudflare" /></span>

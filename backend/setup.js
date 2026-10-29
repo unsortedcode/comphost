@@ -1,5 +1,6 @@
 import { installPlugins } from "./lib/certbot.js";
 import utils from "./lib/utils.js";
+import internalCertificate from "./internal/certificate.js";
 import internalNginx from "./internal/nginx.js";
 import { setup as logger } from "./logger.js";
 import authModel from "./models/auth.js";
@@ -123,6 +124,16 @@ const setupCertbotPlugins = async () => {
 			if (certificate.meta && certificate.meta.dns_challenge === true) {
 				if (plugins.indexOf(certificate.meta.dns_provider) === -1) {
 					plugins.push(certificate.meta.dns_provider);
+				}
+
+				// Saved-token Cloudflare certs are rebuilt from Settings each time
+				if (internalCertificate.usesSavedCloudflare(certificate.meta)) {
+					promises.push(
+						internalCertificate
+							.writeDnsCredentials(certificate.id, certificate.meta)
+							.catch((err) => logger.warn(`Certificate #${certificate.id}: ${err.message}`)),
+					);
+					return true;
 				}
 
 				// Make sure credentials file exists

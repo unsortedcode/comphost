@@ -746,18 +746,26 @@ const internalStack = {
 					}
 				}
 
-				// Optional: certificate — "new" requests a Let's Encrypt cert (HTTP-01),
-				// a number uses an existing cert, anything else = none (plain HTTP).
+				// Optional: certificate — "new" requests a Let's Encrypt cert (HTTP-01,
+				// or DNS-01 through the saved Cloudflare token when dns_challenge is
+				// set), a number uses an existing cert, anything else = none.
 				let certificateId = 0;
 				if (data.certificate === "new") {
 					progress(
-						`Requesting a Let's Encrypt certificate for ${data.domain_names.join(", ")} — this can take 30s or more…`,
+						`Requesting a Let's Encrypt certificate for ${data.domain_names.join(", ")}${
+							data.dns_challenge ? " via a Cloudflare DNS challenge" : ""
+						} — this can take 30s or more…`,
 					);
+					const meta = { letsencrypt_agree: true, dns_challenge: !!data.dns_challenge, key_type: "ecdsa" };
+					if (data.dns_challenge) {
+						// No credentials of its own: the saved token is used.
+						Object.assign(meta, { dns_provider: "cloudflare", dns_provider_credentials: "" });
+					}
 					const cert = await internalCertificate.create(access, {
 						provider: "letsencrypt",
 						nice_name: `${row.name} (${data.service})`,
 						domain_names: data.domain_names,
-						meta: { letsencrypt_agree: true, dns_challenge: false, key_type: "ecdsa" },
+						meta,
 					});
 					certificateId = cert.id;
 					progress(`  → certificate #${cert.id} issued`);

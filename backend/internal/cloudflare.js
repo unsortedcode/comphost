@@ -156,6 +156,25 @@ const internalCloudflare = {
 		};
 	},
 
+	/**
+	 * certbot-dns-cloudflare credentials built from the saved config, so DNS-01
+	 * certificates follow the token in Settings (rotation included) instead of
+	 * each holding its own copy.
+	 * @returns {Promise<string>}
+	 */
+	certbotCredentials: async () => {
+		const c = await internalCloudflare.getConfig();
+		if (!c.apiToken) {
+			throw new errs.ValidationError(
+				"No Cloudflare token is configured in Settings → Cloudflare, and none was given for this certificate",
+			);
+		}
+		// verify() cleared the email unless this is a Global API Key.
+		return c.email
+			? `dns_cloudflare_email = ${c.email}\ndns_cloudflare_api_key = ${c.apiToken}\n`
+			: `dns_cloudflare_api_token = ${c.apiToken}\n`;
+	},
+
 	/** Whether Cloudflare is set up. */
 	isConfigured: async () => {
 		const c = await internalCloudflare.getConfig();

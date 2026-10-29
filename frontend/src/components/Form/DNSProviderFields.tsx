@@ -1,9 +1,10 @@
 import { IconAlertTriangle } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 import { Field, useFormikContext } from "formik";
 import { useState } from "react";
 import Select, { type ActionMeta } from "react-select";
-import type { DNSProvider } from "src/api/backend";
+import { type DNSProvider, getCloudflare } from "src/api/backend";
 import { useDnsProviders } from "src/hooks";
 import { intl, T } from "src/locale";
 import styles from "./DNSProviderFields.module.css";
@@ -21,13 +22,28 @@ export function DNSProviderFields({ showBoundaryBox = false }: Props) {
 	const { values, setFieldValue } = useFormikContext();
 	const { data: dnsProviders, isLoading } = useDnsProviders();
 	const [dnsProviderId, setDnsProviderId] = useState<string | null>(null);
+	// Cloudflare with no credentials of its own uses the token from Settings
+	const { data: cloudflare } = useQuery({
+		queryKey: ["cloudflare-config"],
+		queryFn: getCloudflare,
+		staleTime: 60_000,
+	});
+	const [useSavedToken, setUseSavedToken] = useState(false);
 
 	const v: any = values || {};
 
 	const handleChange = (newValue: any, _actionMeta: ActionMeta<DNSProviderOption>) => {
+		const saved = newValue?.value === "cloudflare" && !!cloudflare?.configured;
 		setFieldValue("meta.dnsProvider", newValue?.value);
-		setFieldValue("meta.dnsProviderCredentials", newValue?.credentials);
+		setFieldValue("meta.dnsProviderCredentials", saved ? "" : newValue?.credentials);
 		setDnsProviderId(newValue?.value);
+		setUseSavedToken(saved);
+	};
+
+	const handleSavedTokenChange = (checked: boolean) => {
+		const template = options.find((o) => o.value === dnsProviderId)?.credentials || "";
+		setFieldValue("meta.dnsProviderCredentials", checked ? "" : template);
+		setUseSavedToken(checked);
 	};
 
 	const options: DNSProviderOption[] =
@@ -67,44 +83,60 @@ export function DNSProviderFields({ showBoundaryBox = false }: Props) {
 				)}
 			</Field>
 
+			{dnsProviderId === "cloudflare" && cloudflare?.configured ? (
+				<label className="form-check mt-3">
+					<input
+						className="form-check-input"
+						type="checkbox"
+						checked={useSavedToken}
+						onChange={(e) => handleSavedTokenChange(e.target.checked)}
+					/>
+					<span className="form-check-label">
+						<T id="certificates.dns.cloudflare-saved" />
+					</span>
+				</label>
+			) : null}
+
 			{dnsProviderId ? (
 				<>
-					<Field name="meta.dnsProviderCredentials">
-						{({ field }: any) => (
-							<div className="mt-3">
-								<label htmlFor="dnsProviderCredentials" className="form-label">
-									<T id="certificates.dns.credentials" />
-								</label>
-								<CodeEditor
-									language="bash"
-									id="dnsProviderCredentials"
-									padding={15}
-									data-color-mode="dark"
-									minHeight={130}
-									indentWidth={2}
-									style={{
-										fontFamily:
-											"ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace",
-										borderRadius: "0.3rem",
-										minHeight: "130px",
-										backgroundColor: "var(--tblr-bg-surface-dark)",
-									}}
-									value={v.meta.dnsProviderCredentials || ""}
-									{...field}
-								/>
-								<div>
-									<small className="text-muted">
-										<T id="certificates.dns.credentials-note" />
-									</small>
+					{useSavedToken ? null : (
+						<Field name="meta.dnsProviderCredentials">
+							{({ field }: any) => (
+								<div className="mt-3">
+									<label htmlFor="dnsProviderCredentials" className="form-label">
+										<T id="certificates.dns.credentials" />
+									</label>
+									<CodeEditor
+										language="bash"
+										id="dnsProviderCredentials"
+										padding={15}
+										data-color-mode="dark"
+										minHeight={130}
+										indentWidth={2}
+										style={{
+											fontFamily:
+												"ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace",
+											borderRadius: "0.3rem",
+											minHeight: "130px",
+											backgroundColor: "var(--tblr-bg-surface-dark)",
+										}}
+										value={v.meta.dnsProviderCredentials || ""}
+										{...field}
+									/>
+									<div>
+										<small className="text-muted">
+											<T id="certificates.dns.credentials-note" />
+										</small>
+									</div>
+									<div>
+										<small className="text-danger">
+											<T id="certificates.dns.credentials-warning" />
+										</small>
+									</div>
 								</div>
-								<div>
-									<small className="text-danger">
-										<T id="certificates.dns.credentials-warning" />
-									</small>
-								</div>
-							</div>
-						)}
-					</Field>
+							)}
+						</Field>
+					)}
 					<Field name="meta.propagationSeconds">
 						{({ field }: any) => (
 							<div className="mt-3">

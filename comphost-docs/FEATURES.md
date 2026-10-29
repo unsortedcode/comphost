@@ -85,6 +85,12 @@ unchanged and aren't repeated here — this is what the fork adds or fixes.
   authoritative nameservers (bypassing local negative caching) before requesting
   a certificate. If the CA's first lookup misses, that NXDOMAIN is cached on
   *their* side and the retry fails too, so this is done up front.
+- **DNS-01 with the saved token** — a Cloudflare DNS-challenge certificate
+  uses the token from Settings → Cloudflare unless it is given credentials of
+  its own. Nothing is copied into the certificate: the credentials file is
+  rebuilt before every issue and renewal, so rotating the token in Settings
+  covers every such certificate. Auto-expose can request its certificate this
+  way too, so a service can get HTTPS on a box whose port 80 isn't reachable.
 - **DNS pre-flight** — refuses to spend a Let's Encrypt attempt on a name that
   doesn't resolve at all, with a message that names the fix. Skipped for DNS-01
   and wildcards.

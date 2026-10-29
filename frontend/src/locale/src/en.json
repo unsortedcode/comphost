@@ -209,6 +209,9 @@
 	"certificates.custom.warning": {
 		"defaultMessage": "Key files protected with a passphrase are not supported."
 	},
+	"certificates.dns.cloudflare-saved": {
+		"defaultMessage": "Use the Cloudflare token from Settings → Cloudflare"
+	},
 	"certificates.dns.credentials": {
 		"defaultMessage": "Credentials File Content"
 	},
@@ -994,6 +997,9 @@
 	},
 	"stack.expose.cloudflare": {
 		"defaultMessage": "Point DNS at this server via Cloudflare"
+	},
+	"stack.expose.dns-challenge": {
+		"defaultMessage": "Validate through DNS (Cloudflare token) instead of HTTP — works without port 80"
 	},
 	"stack.expose.domains": {
 		"defaultMessage": "Domain Names"

@@ -37,6 +37,8 @@ const exposeSchema = {
 		certificate: {},
 		certificate_id: {},
 		cloudflare: { type: "boolean" },
+		// With certificate "new": DNS-01 through the saved Cloudflare token.
+		dns_challenge: { type: "boolean" },
 		access_list_id: {},
 		// Optional explicit network alias; otherwise a compose-declared alias for
 		// the comphost network is used, else <stack>-<service>.
@@ -564,6 +566,7 @@ router
 				certificate: payload.certificate,
 				certificate_id: payload.certificate_id,
 				cloudflare: payload.cloudflare,
+				dns_challenge: payload.dns_challenge,
 				access_list_id: payload.access_list_id,
 				basic_auth: payload.basic_auth,
 			});
@@ -617,6 +620,7 @@ router
 						certificate: payload.certificate,
 						certificate_id: payload.certificate_id,
 						cloudflare: payload.cloudflare,
+						dns_challenge: payload.dns_challenge,
 						access_list_id: payload.access_list_id,
 						basic_auth: payload.basic_auth,
 						alias: payload.alias,
