@@ -7,6 +7,31 @@ unchanged and aren't repeated here — this is what the fork adds or fixes.
 
 ---
 
+## Domains
+
+- **One list of everything served.** Proxy, redirection and 404 hosts, one row
+  per domain, plus stream ports. Each row shows its type, where it goes (stack ▸
+  service for hosts that belong to a stack), its SSL state with days left, and
+  whether nginx is actually serving it. Upstream's four separate host pages are
+  gone; their old URLs open the matching filtered view.
+- **Filters** for type, SSL state, stack and "needs attention" (expiring or
+  expired certificate, nginx rejected the config, drift, an unlinked stack
+  target). They live in the URL, so the dashboard and stack pages link straight
+  to a view.
+- **From a row**: edit the host, open its stack, enable/disable or delete it.
+  The Add menu covers every host type, plus exposing a stack service.
+- **Linking existing hosts to stacks.** A host set up before its stack was
+  adopted (typically targeting a container name or IP) gets a link suggestion
+  when its target matches exactly one stack service. Linking records the
+  association only: the host's target and nginx config stay as they are.
+- **Stack pages**: each stack has a page with its status, actions, services,
+  drift findings and the domains it serves.
+- **Permissions**: each host type is filtered by its own permission, so a user
+  sees exactly the hosts they could see before. A denied permission check now
+  returns 403; it used to fall through to a 404 (an upstream bug).
+
+---
+
 ## Stacks
 
 **Managing compose files**
@@ -38,6 +63,22 @@ unchanged and aren't repeated here — this is what the fork adds or fixes.
   — compose derives the project name from the directory, which needn't match the
   name a stack was adopted under.
 
+**Drift watch**
+- Every two minutes, and a few seconds after any relevant docker event, each
+  stack is checked against what CompHost set up.
+- A service behind a host that dropped off the `comphost` network or lost its
+  alias (e.g. `docker compose up` run on the box recreated it) is **re-attached
+  automatically**.
+- Reported, not changed: the compose file edited outside CompHost (with an
+  Accept action that makes the current file the new baseline), a missing compose
+  file, a service behind an enabled host that isn't running, and a host whose
+  target IP the service no longer has. Aliases on `comphost` that no host uses
+  are listed for information.
+- Findings show on the affected Domains rows, as a badge in the Stacks list and
+  on the stack page; each is written to the audit log once, each repair
+  separately. Stacks without a baseline (anything from before 0.10) get one on
+  the first scan, so upgrading raises no false alarms.
+
 **Adoption**
 - Discover compose projects already running on the host and adopt them *in place*
   (`compose_dir`), so an existing box migrates without moving files or disturbing
@@ -63,9 +104,31 @@ unchanged and aren't repeated here — this is what the fork adds or fixes.
   nginx stream host over the same alias mechanism, with ports pre-filled from the
   container's exposed ports.
 - **"Exposed as" column** — proxy domains (with a lock icon when SSL is on) and
-  stream ports listed inline per stack.
+  stream ports listed inline per stack, linking to the stack's Domains view.
 - **Cascade cleanup** — deleting a stack removes the proxy hosts *and* stream
   hosts CompHost created for it. Adopted stacks keep their directory.
+
+---
+
+## Mail relay
+
+- Hosted services send mail to **`smtp`, port 25 or 587**, on the `comphost`
+  network, with no login and no TLS. Nothing is published on the host.
+- CompHost picks one of the configured **upstream servers by sender address**:
+  an exact address, then `@domain`, then `*`. A sender with no route is refused
+  with a 550, so the app sees a real error.
+- **Send as**: a route can replace the sender with the address the upstream
+  accepts. The original sender goes into `Reply-To` (an existing one can be
+  kept) and `X-Original-From`. Only the headers change; the body passes through
+  byte for byte.
+- **Pass-through**: a message is accepted only once the upstream accepted it,
+  and the upstream's error is relayed otherwise. Nothing is queued or stored.
+- Settings → Mail relay: upstream servers with a connection test, routes, a
+  test message, and the last 50 deliveries.
+- Only the `comphost` subnet is admitted. New installs get the `smtp` alias from
+  `docker-compose.yml`; running installs get it at startup, unless another
+  container already answers to `smtp`. Stream hosts on 25/587 and the relay
+  refuse each other.
 
 ---
 

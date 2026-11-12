@@ -119,14 +119,22 @@ Your existing hosts keep working untouched. To start using the new half:
   (those never appear in `docker compose ls`). Adoption registers a project *in
   place* — no files are moved, nothing is restarted.
 
-- **Existing proxy hosts are not linked to adopted stacks.** They keep working
-  exactly as before, still pointing at whatever IP and port you configured. They
-  just won't show in the stack's "Exposed as" column, because nothing associates
-  them yet. If you want that link — and the automatic re-attachment after
-  redeploys that comes with it — re-expose the service from the stack and remove
-  the old host.
+- **Link your existing hosts to their stacks.** After adopting, open Domains:
+  a host whose target matches exactly one stack service (its container name,
+  network alias or IP) shows "Runs in stack … ▸ …, not linked". Choose **Link to
+  stack** from the row's menu. Nothing about the host changes; it keeps its
+  target and nginx config. From then on it shows under the stack and the drift
+  watch looks after it. A host that targets an IP is reported if the container's
+  IP changes; point it at the service's alias to make it survive recreation.
+  Hosts that match nothing (another machine, an ambiguous target) keep working
+  unlinked.
 
 - **Set up a backup target** (Settings → Backup) before you need one.
+
+- **Mail relay** (Settings → Mail relay) is off until you turn it on. The `smtp`
+  name it needs on the `comphost` network is added automatically, so your
+  compose file doesn't have to change. Adding it reconnects CompHost to that
+  network once, which interrupts proxied traffic to stacks for under a second.
 
 - **Add your Cloudflare token** (Settings → Cloudflare) if you want DNS records
   created when you add a host.
