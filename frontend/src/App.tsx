@@ -7,8 +7,35 @@ import { AuthProvider, LocaleProvider, ThemeProvider } from "src/context";
 import { intl } from "src/locale";
 import Router from "src/Router.tsx";
 
-// Create a client
-const queryClient = new QueryClient();
+// The Domains list is assembled from every host kind plus stacks and
+// certificates. Modals refresh only their own lists after a save, so refresh
+// Domains whenever any of its sources is.
+const DOMAIN_SOURCES = new Set([
+	"proxy-hosts",
+	"proxy-host",
+	"redirection-hosts",
+	"redirection-host",
+	"dead-hosts",
+	"dead-host",
+	"streams",
+	"stream",
+	"stacks",
+	"stack",
+	"certificates",
+	"certificate",
+]);
+
+class AppQueryClient extends QueryClient {
+	override invalidateQueries(...args: Parameters<QueryClient["invalidateQueries"]>) {
+		const key = args[0]?.queryKey?.[0];
+		if (typeof key === "string" && DOMAIN_SOURCES.has(key)) {
+			void super.invalidateQueries({ queryKey: ["domains"] });
+		}
+		return super.invalidateQueries(...args);
+	}
+}
+
+const queryClient = new AppQueryClient();
 
 function App() {
 	return (

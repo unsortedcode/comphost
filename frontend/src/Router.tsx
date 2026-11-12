@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import {
 	ErrorNotFound,
 	LoadingPage,
@@ -21,11 +21,9 @@ const Certificates = lazy(() => import("src/pages/Certificates"));
 const Access = lazy(() => import("src/pages/Access"));
 const AuditLog = lazy(() => import("src/pages/AuditLog"));
 const Users = lazy(() => import("src/pages/Users"));
-const ProxyHosts = lazy(() => import("src/pages/Nginx/ProxyHosts"));
-const RedirectionHosts = lazy(() => import("src/pages/Nginx/RedirectionHosts"));
-const DeadHosts = lazy(() => import("src/pages/Nginx/DeadHosts"));
-const Streams = lazy(() => import("src/pages/Nginx/Streams"));
+const Domains = lazy(() => import("src/pages/Domains"));
 const Stacks = lazy(() => import("src/pages/Stacks"));
+const StackDetail = lazy(() => import("src/pages/Stacks/Detail"));
 
 function Router() {
 	const health = useHealth();
@@ -67,11 +65,17 @@ function Router() {
 							<Route path="/audit-log" element={<AuditLog />} />
 							<Route path="/settings" element={<Settings />} />
 							<Route path="/users" element={<Users />} />
-							<Route path="/nginx/proxy" element={<ProxyHosts />} />
-							<Route path="/nginx/redirection" element={<RedirectionHosts />} />
-							<Route path="/nginx/404" element={<DeadHosts />} />
-							<Route path="/nginx/stream" element={<Streams />} />
+							<Route path="/domains" element={<Domains />} />
+							{/* The per-type pages folded into Domains; keep old links working */}
+							<Route path="/nginx/proxy" element={<Navigate to="/domains?type=proxy" replace />} />
+							<Route
+								path="/nginx/redirection"
+								element={<Navigate to="/domains?type=redirect" replace />}
+							/>
+							<Route path="/nginx/404" element={<Navigate to="/domains?type=dead" replace />} />
+							<Route path="/nginx/stream" element={<Navigate to="/domains?type=stream" replace />} />
 							<Route path="/stacks" element={<Stacks />} />
+							<Route path="/stacks/:id" element={<StackDetail />} />
 							<Route path="/" element={<Dashboard />} />
 						</Routes>
 					</Suspense>

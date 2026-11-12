@@ -6,6 +6,8 @@ export * from "./DomainsFormatter";
 export * from "./EmailFormatter";
 export * from "./EventFormatter";
 export * from "./GravatarFormatter";
+export * from "./HostKindFormatter";
 export * from "./RolesFormatter";
+export * from "./SslStateFormatter";
 export * from "./TrueFalseFormatter";
 export * from "./ValueWithDateFormatter";

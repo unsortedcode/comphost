@@ -5,10 +5,11 @@ import Modal from "react-bootstrap/Modal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { exposeStackStreaming, getCloudflare, getStackServices, type StackService } from "src/api/backend";
 import { Button } from "src/components";
-import { useStack } from "src/hooks";
+import { useStack, useStacks } from "src/hooks";
 import { T } from "src/locale";
 import { showObjectSuccess } from "src/notifications";
 
+/** id 0 asks which stack first (opened from the Domains page). */
 const showStackExposeModal = (id: number) => {
 	EasyModal.show(StackExposeModal, { id });
 };
@@ -17,9 +18,11 @@ interface Props extends InnerModalProps {
 	id: number;
 }
 
-const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
+const StackExposeModal = EasyModal.create(({ id: initialId, visible, remove }: Props) => {
 	const queryClient = useQueryClient();
-	const { data: stack } = useStack(id);
+	const [id, setId] = useState(initialId);
+	const { data: stack } = useStack(id, { enabled: id > 0 });
+	const { data: stacks } = useStacks([], { enabled: initialId === 0 });
 	const [services, setServices] = useState<StackService[]>([]);
 	const [service, setService] = useState("");
 	const [port, setPort] = useState<number>(80);
@@ -37,6 +40,10 @@ const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const [progress, setProgress] = useState<string[]>([]);
 
 	useEffect(() => {
+		if (!id) {
+			setServices([]);
+			return;
+		}
 		getStackServices(id)
 			.then((rows) => {
 				setServices(rows || []);
@@ -111,6 +118,22 @@ const StackExposeModal = EasyModal.create(({ id, visible, remove }: Props) => {
 				<p className="text-secondary">
 					<T id="stack.expose.help" />
 				</p>
+
+				{initialId === 0 && (
+					<div className="mb-3">
+						<label className="form-label">
+							<T id="stack" />
+						</label>
+						<select className="form-select" value={id} onChange={(e) => setId(Number(e.target.value))}>
+							<option value={0}>—</option>
+							{(stacks || []).map((s) => (
+								<option key={s.id} value={s.id}>
+									{s.name}
+								</option>
+							))}
+						</select>
+					</div>
+				)}
 
 				<div className="row">
 					<div className="col-8 mb-3">

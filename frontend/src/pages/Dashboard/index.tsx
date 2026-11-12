@@ -1,13 +1,50 @@
-import { IconArrowsCross, IconBolt, IconBoltOff, IconDisc } from "@tabler/icons-react";
+import {
+	IconAlertTriangle,
+	IconArrowsCross,
+	IconBolt,
+	IconBoltOff,
+	IconDisc,
+	IconShieldExclamation,
+} from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { HasPermission } from "src/components";
-import { useHostReport } from "src/hooks";
+import { useDomains, useHostReport } from "src/hooks";
 import { T } from "src/locale";
 import { DEAD_HOSTS, PROXY_HOSTS, REDIRECTION_HOSTS, STREAMS, VIEW } from "src/modules/Permissions";
+import { needsAttention } from "src/pages/Domains/kinds";
 
 const Dashboard = () => {
 	const { data: hostReport } = useHostReport();
 	const navigate = useNavigate();
+	const { data: domains } = useDomains();
+	const attention = domains?.filter(needsAttention).length ?? 0;
+	const certTrouble =
+		domains?.filter((d) => d.enabled && (d.sslState === "expiring" || d.sslState === "expired")).length ?? 0;
+
+	// A dashboard card that opens a filtered Domains view.
+	const card = (to: string, color: string, icon: React.ReactNode, label: React.ReactNode) => (
+		<div className="col-sm-6 col-lg-3">
+			<a
+				href={to}
+				className="card card-sm card-link card-link-pop"
+				onClick={(e) => {
+					e.preventDefault();
+					navigate(to);
+				}}
+			>
+				<div className="card-body">
+					<div className="row align-items-center">
+						<div className="col-auto">
+							<span className={`${color} text-white avatar`}>{icon}</span>
+						</div>
+						<div className="col">
+							<div className="font-weight-medium">{label}</div>
+						</div>
+					</div>
+				</div>
+			</a>
+		</div>
+	);
 
 	return (
 		<div>
@@ -15,16 +52,34 @@ const Dashboard = () => {
 				<T id="dashboard" />
 			</h2>
 			<div className="row row-deck row-cards">
+				{domains ? (
+					<div className="col-12 mt-4">
+						<div className="row row-cards">
+							{card(
+								"/domains?attention=1",
+								attention ? "bg-orange" : "bg-green",
+								<IconAlertTriangle />,
+								<T id="dashboard.needs-attention" data={{ count: attention }} />,
+							)}
+							{card(
+								"/domains?attention=1",
+								certTrouble ? "bg-red" : "bg-green",
+								<IconShieldExclamation />,
+								<T id="dashboard.certificates-expiring" data={{ count: certTrouble }} />,
+							)}
+						</div>
+					</div>
+				) : null}
 				<div className="col-12 my-4">
 					<div className="row row-cards">
 						<HasPermission section={PROXY_HOSTS} permission={VIEW} hideError>
 							<div className="col-sm-6 col-lg-3">
 								<a
-									href="/nginx/proxy"
+									href="/domains?type=proxy"
 									className="card card-sm card-link card-link-pop"
 									onClick={(e) => {
 										e.preventDefault();
-										navigate("/nginx/proxy");
+										navigate("/domains?type=proxy");
 									}}
 								>
 									<div className="card-body">
@@ -47,11 +102,11 @@ const Dashboard = () => {
 						<HasPermission section={REDIRECTION_HOSTS} permission={VIEW} hideError>
 							<div className="col-sm-6 col-lg-3">
 								<a
-									href="/nginx/redirection"
+									href="/domains?type=redirect"
 									className="card card-sm card-link card-link-pop"
 									onClick={(e) => {
 										e.preventDefault();
-										navigate("/nginx/redirection");
+										navigate("/domains?type=redirect");
 									}}
 								>
 									<div className="card-body">
@@ -75,11 +130,11 @@ const Dashboard = () => {
 						<HasPermission section={STREAMS} permission={VIEW} hideError>
 							<div className="col-sm-6 col-lg-3">
 								<a
-									href="/nginx/stream"
+									href="/domains?type=stream"
 									className="card card-sm card-link card-link-pop"
 									onClick={(e) => {
 										e.preventDefault();
-										navigate("/nginx/stream");
+										navigate("/domains?type=stream");
 									}}
 								>
 									<div className="card-body">
@@ -100,11 +155,11 @@ const Dashboard = () => {
 						<HasPermission section={DEAD_HOSTS} permission={VIEW} hideError>
 							<div className="col-sm-6 col-lg-3">
 								<a
-									href="/nginx/404"
+									href="/domains?type=dead"
 									className="card card-sm card-link card-link-pop"
 									onClick={(e) => {
 										e.preventDefault();
-										navigate("/nginx/404");
+										navigate("/domains?type=dead");
 									}}
 								>
 									<div className="card-body">

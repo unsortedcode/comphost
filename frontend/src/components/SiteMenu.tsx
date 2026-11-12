@@ -1,30 +1,18 @@
 import {
 	IconBook,
 	IconBrandDocker,
-	IconDeviceDesktop,
 	IconHome,
 	IconLock,
 	IconSettings,
 	IconShield,
 	IconUser,
+	IconWorld,
 } from "@tabler/icons-react";
 import cn from "classnames";
 import React from "react";
 import { HasPermission, NavLink } from "src/components";
 import { T } from "src/locale";
-import {
-	ACCESS_LISTS,
-	ADMIN,
-	CERTIFICATES,
-	DEAD_HOSTS,
-	type MANAGE,
-	PROXY_HOSTS,
-	REDIRECTION_HOSTS,
-	type Section,
-	STACKS,
-	STREAMS,
-	VIEW,
-} from "src/modules/Permissions";
+import { ACCESS_LISTS, ADMIN, CERTIFICATES, type MANAGE, type Section, STACKS, VIEW } from "src/modules/Permissions";
 
 interface MenuItem {
 	label: string;
@@ -42,34 +30,10 @@ const menuItems: MenuItem[] = [
 		label: "dashboard",
 	},
 	{
-		icon: IconDeviceDesktop,
-		label: "hosts",
-		items: [
-			{
-				to: "/nginx/proxy",
-				label: "proxy-hosts",
-				permissionSection: PROXY_HOSTS,
-				permission: VIEW,
-			},
-			{
-				to: "/nginx/redirection",
-				label: "redirection-hosts",
-				permissionSection: REDIRECTION_HOSTS,
-				permission: VIEW,
-			},
-			{
-				to: "/nginx/stream",
-				label: "streams",
-				permissionSection: STREAMS,
-				permission: VIEW,
-			},
-			{
-				to: "/nginx/404",
-				label: "dead-hosts",
-				permissionSection: DEAD_HOSTS,
-				permission: VIEW,
-			},
-		],
+		// Every host kind in one list; each is filtered by its own permission server-side
+		to: "/domains",
+		icon: IconWorld,
+		label: "domains",
 	},
 	{
 		to: "/stacks",
@@ -157,7 +121,7 @@ const getMenuDropown = (item: MenuItem, onClick?: () => void) => {
 					role="button"
 				>
 					<span className="nav-link-icon d-md-none d-lg-inline-block">
-						<IconDeviceDesktop height={24} width={24} />
+						{item.icon ? React.createElement(item.icon, { height: 24, width: 24 }) : null}
 					</span>
 					<span className="nav-link-title">
 						<T id={item.label} />

@@ -9,6 +9,8 @@ import {
 	EmptyData,
 	GravatarFormatter,
 	HasPermission,
+	SslStateFormatter,
+	sslStateFromExpiry,
 } from "src/components";
 import { TableLayout } from "src/components/Table/TableLayout";
 import { intl, T } from "src/locale";
@@ -77,7 +79,15 @@ export default function Table({ data, isFetching, onDelete, onRenew, onDownload,
 				id: "expiresOn",
 				header: intl.formatMessage({ id: "column.expires" }),
 				cell: (info: any) => {
-					return <DateFormatter value={info.getValue()} highlightPast />;
+					const expiresOn = info.getValue();
+					return (
+						<div>
+							<SslStateFormatter state={sslStateFromExpiry(expiresOn)} expiresOn={expiresOn} />
+							<div className="small text-secondary mt-1">
+								<DateFormatter value={expiresOn} highlightPast />
+							</div>
+						</div>
+					);
 				},
 			}),
 			columnHelper.accessor((row: any) => row, {

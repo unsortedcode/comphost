@@ -23,6 +23,7 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { Stack, StackAction } from "src/api/backend";
 import { EmptyData, GravatarFormatter, HasPermission, ValueWithDateFormatter } from "src/components";
 import { TableLayout } from "src/components/Table/TableLayout";
@@ -39,7 +40,7 @@ const STATUS_META: Record<number, { label: string; color: string }> = {
 	5: { label: "stack.status.partial", color: "bg-orange" },
 };
 
-function StackStatus({ status, statusText }: { status: number; statusText?: string | null }) {
+export function StackStatus({ status, statusText }: { status: number; statusText?: string | null }) {
 	const meta = STATUS_META[status] ?? STATUS_META[0];
 	// compose's own wording ("exited(1), running(2)") explains why a stack reads
 	// Partial or Exited — worth surfacing rather than making the user go digging.
@@ -105,7 +106,11 @@ export default function Table({
 				sortingFn: (a, b) => a.original.name.localeCompare(b.original.name),
 				cell: (info: any) => {
 					const value = info.getValue();
-					return <ValueWithDateFormatter value={value.name} createdOn={value.createdOn} />;
+					return (
+						<Link to={`/stacks/${value.id}`} className="text-reset">
+							<ValueWithDateFormatter value={value.name} createdOn={value.createdOn} />
+						</Link>
+					);
 				},
 			}),
 			columnHelper.accessor((row: any) => row, {
@@ -151,7 +156,7 @@ export default function Table({
 						return <span className="text-secondary">—</span>;
 					}
 					return (
-						<div className="d-flex flex-column gap-1">
+						<Link to={`/domains?stack=${row.id}`} className="d-flex flex-column gap-1 text-reset">
 							{list.map((e) => (
 								<span key={`${e.type}-${e.id}`} className="small">
 									{e.type === "proxy" ? (
@@ -167,7 +172,7 @@ export default function Table({
 									)}
 								</span>
 							))}
-						</div>
+						</Link>
 					);
 				},
 			}),

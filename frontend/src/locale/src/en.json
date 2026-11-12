@@ -311,6 +311,9 @@
 	"column.details": {
 		"defaultMessage": "Details"
 	},
+	"column.domain": {
+		"defaultMessage": "Domain"
+	},
 	"column.email": {
 		"defaultMessage": "Email"
 	},
@@ -362,11 +365,20 @@
 	"column.status": {
 		"defaultMessage": "Status"
 	},
+	"column.type": {
+		"defaultMessage": "Type"
+	},
 	"created-on": {
 		"defaultMessage": "Created: {date}"
 	},
 	"dashboard": {
 		"defaultMessage": "Dashboard"
+	},
+	"dashboard.certificates-expiring": {
+		"defaultMessage": "{count, plural, =0 {All certificates valid} one {# domain's certificate expiring or expired} other {# domains' certificates expiring or expired}}"
+	},
+	"dashboard.needs-attention": {
+		"defaultMessage": "{count, plural, =0 {Nothing needs attention} one {# domain needs attention} other {# domains need attention}}"
 	},
 	"dead-host": {
 		"defaultMessage": "404 Host"
@@ -379,6 +391,9 @@
 	},
 	"disabled": {
 		"defaultMessage": "Disabled"
+	},
+	"domain": {
+		"defaultMessage": "Domain"
 	},
 	"domain-names": {
 		"defaultMessage": "Domain Names"
@@ -395,6 +410,12 @@
 	"domain-names.wildcards-not-supported": {
 		"defaultMessage": "Wildcards not supported for this CA"
 	},
+	"domains": {
+		"defaultMessage": "Domains"
+	},
+	"domains.add.expose": {
+		"defaultMessage": "Expose a stack service"
+	},
 	"domains.advanced": {
 		"defaultMessage": "Advanced"
 	},
@@ -410,8 +431,38 @@
 	"domains.http2-support": {
 		"defaultMessage": "HTTP/2 Support"
 	},
+	"domains.link": {
+		"defaultMessage": "Link to stack {stack}"
+	},
+	"domains.link-suggestion": {
+		"defaultMessage": "Runs in stack {stack} ▸ {service}, not linked"
+	},
+	"domains.linked": {
+		"defaultMessage": "Linked {domains} to stack {stack}"
+	},
+	"domains.needs-attention": {
+		"defaultMessage": "Needs attention ({count})"
+	},
+	"domains.open-stack": {
+		"defaultMessage": "Open stack"
+	},
+	"domains.problem": {
+		"defaultMessage": "{count, plural, one {# problem} other {# problems}}"
+	},
+	"domains.problem.offline": {
+		"defaultMessage": "nginx rejected this host's configuration, so it isn't being served"
+	},
+	"domains.shared-host": {
+		"defaultMessage": "{count, plural, one {+ # other domain on this host} other {+ # other domains on this host}}"
+	},
 	"domains.trust-forwarded-proto": {
 		"defaultMessage": "Trust Upstream Forwarded Proto Headers"
+	},
+	"domains.unlink": {
+		"defaultMessage": "Unlink from stack"
+	},
+	"domains.unlinked": {
+		"defaultMessage": "Unlinked {domains} from stack {stack}"
 	},
 	"domains.use-dns": {
 		"defaultMessage": "Use DNS Challenge"
@@ -467,8 +518,23 @@
 	"expires.on": {
 		"defaultMessage": "Expires: {date}"
 	},
+	"filter.all": {
+		"defaultMessage": "All"
+	},
 	"footer.github-fork": {
 		"defaultMessage": "Fork me on Github"
+	},
+	"host-kind.dead": {
+		"defaultMessage": "404"
+	},
+	"host-kind.proxy": {
+		"defaultMessage": "Proxy"
+	},
+	"host-kind.redirect": {
+		"defaultMessage": "Redirect"
+	},
+	"host-kind.stream": {
+		"defaultMessage": "Stream"
 	},
 	"host.flags.block-exploits": {
 		"defaultMessage": "Block Common Exploits"
@@ -860,6 +926,30 @@
 	"ssl-certificate": {
 		"defaultMessage": "SSL Certificate"
 	},
+	"ssl-state.expired": {
+		"defaultMessage": "Expired"
+	},
+	"ssl-state.expiring": {
+		"defaultMessage": "Expires in {days}d"
+	},
+	"ssl-state.filter.expired": {
+		"defaultMessage": "Expired"
+	},
+	"ssl-state.filter.expiring": {
+		"defaultMessage": "Expiring soon"
+	},
+	"ssl-state.filter.none": {
+		"defaultMessage": "No SSL"
+	},
+	"ssl-state.filter.valid": {
+		"defaultMessage": "Valid"
+	},
+	"ssl-state.none": {
+		"defaultMessage": "HTTP only"
+	},
+	"ssl-state.valid": {
+		"defaultMessage": "Valid · {days}d"
+	},
 	"stack": {
 		"defaultMessage": "Stack"
 	},
@@ -952,6 +1042,9 @@
 	},
 	"stack.adopt.use-current": {
 		"defaultMessage": "Adopt this directory ({file})"
+	},
+	"stack.alias": {
+		"defaultMessage": "Network alias"
 	},
 	"stack.compose": {
 		"defaultMessage": "Compose File"
@@ -1069,6 +1162,12 @@
 	},
 	"stack.name.hint": {
 		"defaultMessage": "Lowercase letters, numbers, hyphens and underscores"
+	},
+	"stack.not-found": {
+		"defaultMessage": "This stack doesn't exist, or you don't have access to it."
+	},
+	"stack.services": {
+		"defaultMessage": "Services"
 	},
 	"stack.status-settings.effect": {
 		"defaultMessage": "{count} {count, plural, one {service} other {services}} will be ignored. The status badge shows what's still counted."

@@ -19,8 +19,8 @@ const EXPIRING_DAYS = 14;
 
 // Only proxy and stream hosts have a stack_id (0 = not linked).
 const LINKABLE = {
-	proxy: { model: proxyHostModel, perm: "proxy_hosts", auditType: "proxy-host" },
-	stream: { model: streamModel, perm: "streams", auditType: "stream" },
+	proxy: { internal: internalProxyHost, model: proxyHostModel, perm: "proxy_hosts", auditType: "proxy-host" },
+	stream: { internal: internalStream, model: streamModel, perm: "streams", auditType: "stream" },
 };
 
 /**
@@ -213,12 +213,11 @@ const internalDomains = {
 		if (!LINKABLE[data.kind]) {
 			throw new errs.ValidationError("Only proxy and stream hosts can be linked to a stack");
 		}
-		const { model, perm, auditType } = LINKABLE[data.kind];
+		const { internal, model, perm, auditType } = LINKABLE[data.kind];
 		await access.can(`${perm}:update`, data.host_id);
-		const host = await model.query().where("is_deleted", 0).andWhere("id", data.host_id).first();
-		if (!host) {
-			throw new errs.ItemNotFoundError(data.host_id);
-		}
+		// can() doesn't check ownership; get() applies the owner filter for
+		// users who only see their own hosts, and throws if it isn't theirs.
+		const host = await internal.get(access, { id: data.host_id });
 
 		const meta = { ...(host.meta || {}) };
 		let stackId = 0;
