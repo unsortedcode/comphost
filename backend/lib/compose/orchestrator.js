@@ -305,6 +305,49 @@ export const inspectContainer = async (containerId, network) => {
 };
 
 /**
+ * Every compose-managed container on the host with what it answers to: name,
+ * project, service, compose working directory, and per network its IP and
+ * aliases. Two docker calls regardless of container count.
+ * @returns {Promise<Array<{id: string, name: string, project: string, service: string, workingDir: string, state: string, networks: Object<string, {ip: string, aliases: string[]}>}>>}
+ */
+export const composeContainers = async () => {
+	const ps = await run(["ps", "-a", "-q", "--no-trunc", "--filter", "label=com.docker.compose.project"]);
+	const ids = ps.stdout
+		.split(/\r?\n/)
+		.map((s) => s.trim())
+		.filter(Boolean);
+	if (ps.exitCode !== 0 || !ids.length) {
+		return [];
+	}
+	const { stdout, exitCode } = await run(["inspect", "--format", "json", ...ids]);
+	if (exitCode !== 0) {
+		return [];
+	}
+	let arr;
+	try {
+		arr = JSON.parse(stdout);
+	} catch {
+		return [];
+	}
+	return (Array.isArray(arr) ? arr : [arr]).map((c) => {
+		const labels = c?.Config?.Labels || {};
+		const networks = {};
+		for (const [net, n] of Object.entries(c?.NetworkSettings?.Networks || {})) {
+			networks[net] = { ip: n?.IPAddress || "", aliases: n?.Aliases || [] };
+		}
+		return {
+			id: c.Id,
+			name: String(c.Name || "").replace(/^\//, ""),
+			project: labels["com.docker.compose.project"] || "",
+			service: labels["com.docker.compose.service"] || "",
+			workingDir: labels["com.docker.compose.project.working_dir"] || "",
+			state: String(c?.State?.Status || "").toLowerCase(),
+			networks,
+		};
+	});
+};
+
+/**
  * Compare a service image's local digest with the registry's, without pulling.
  * Uses the shared DOCKER_CONFIG, so private registries configured in Settings →
  * Registries authenticate automatically.
@@ -394,6 +437,7 @@ export default {
 	getServiceContainerId,
 	connectContainerToNetwork,
 	inspectContainer,
+	composeContainers,
 	checkImageUpdate,
 	discoverProjects,
 	up,

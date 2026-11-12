@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { isIP } from "node:net";
 import path from "node:path";
 import _ from "lodash";
 import errs from "../lib/error.js";
@@ -681,8 +682,10 @@ const internalStack = {
 			if (!service) continue;
 			const cid = await orchestrator.getServiceContainerId(dir, service).catch(() => null);
 			if (cid) {
-				// Keep the proxy target alias AND any the user declared in compose.
-				const aliases = [...new Set([host.forward_host, ...declaredAliases(cfg, service)])];
+				// Keep the proxy target alias AND any the user declared in compose. A
+				// host linked after the fact may target an IP, which is no alias.
+				const target = isIP(host.forward_host) ? null : host.forward_host;
+				const aliases = [...new Set([target, ...declaredAliases(cfg, service)].filter(Boolean))];
 				await orchestrator.connectContainerToNetwork(cid, COMPHOST_NETWORK, aliases).catch(() => null);
 			}
 		}
@@ -834,6 +837,26 @@ const internalStack = {
 
 				return proxyHost;
 			});
+	},
+
+	/**
+	 * Every compose container on the host, tagged with the managed stack it
+	 * belongs to (stack_id null when it's not ours). Matched on the compose
+	 * working directory first — an adopted stack's project name needn't match
+	 * the name it was adopted under — and the project name second.
+	 * @returns {Promise<Array<Object>>}
+	 */
+	liveContainers: async () => {
+		const [containers, stacks] = await Promise.all([
+			orchestrator.composeContainers().catch(() => []),
+			stackModel.query().where("is_deleted", 0),
+		]);
+		const byDir = new Map(stacks.map((s) => [path.normalize(stackPathOf(s)), s]));
+		const byName = new Map(stacks.map((s) => [s.name, s]));
+		return containers.map((c) => {
+			const stack = (c.workingDir && byDir.get(path.normalize(c.workingDir))) || byName.get(c.project) || null;
+			return { ...c, stack_id: stack?.id ?? null, stack_name: stack?.name ?? null };
+		});
 	},
 
 	/**
