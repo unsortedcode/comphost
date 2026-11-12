@@ -50,8 +50,11 @@ services:
       # Stacks directory — identical path both sides:
       - "${COMPHOST_STACKS_DIR:-/opt/stacks}:${COMPHOST_STACKS_DIR:-/opt/stacks}"
     networks:
-      - default
-      - comphost
+      default:
+      comphost:
+        # Hosted services send mail to smtp:25 when the relay is on
+        # (Settings → Mail relay). Older installs get this alias at startup.
+        aliases: [smtp]
 
 networks:
   # Shared network CompHost proxies exposed stack services over. Explicit name so

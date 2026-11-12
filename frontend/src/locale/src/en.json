@@ -959,6 +959,120 @@
 	"settings.secure-admin.test": {
 		"defaultMessage": "Test Reachability"
 	},
+	"settings.smtp": {
+		"defaultMessage": "Mail relay"
+	},
+	"settings.smtp.add-route": {
+		"defaultMessage": "Add route"
+	},
+	"settings.smtp.add-upstream": {
+		"defaultMessage": "Add server"
+	},
+	"settings.smtp.alias-conflict": {
+		"defaultMessage": "Another container on the comphost network already answers to \"smtp\", so CompHost didn't take the name. Remove that alias, then turn the relay off and on again."
+	},
+	"settings.smtp.alias-unknown": {
+		"defaultMessage": "Couldn't check the \"smtp\" name on the comphost network. Services can still reach the relay by CompHost's container name."
+	},
+	"settings.smtp.enabled": {
+		"defaultMessage": "Relay mail for hosted services"
+	},
+	"settings.smtp.help": {
+		"defaultMessage": "Services on the comphost network send mail to smtp, port 25 or 587, with no login and no TLS. CompHost picks a server below by sender address and hands the message over; the sending app gets that server's answer, and nothing is queued or stored."
+	},
+	"settings.smtp.host": {
+		"defaultMessage": "Server"
+	},
+	"settings.smtp.keep-reply-to": {
+		"defaultMessage": "Keep a Reply-To the message already has"
+	},
+	"settings.smtp.listening": {
+		"defaultMessage": "Listening on smtp:25 and smtp:587"
+	},
+	"settings.smtp.match": {
+		"defaultMessage": "Sender"
+	},
+	"settings.smtp.name": {
+		"defaultMessage": "Name"
+	},
+	"settings.smtp.not-listening": {
+		"defaultMessage": "Not listening"
+	},
+	"settings.smtp.password": {
+		"defaultMessage": "Password"
+	},
+	"settings.smtp.password-keep": {
+		"defaultMessage": "Leave empty to keep"
+	},
+	"settings.smtp.port": {
+		"defaultMessage": "Port"
+	},
+	"settings.smtp.recent": {
+		"defaultMessage": "Recent messages"
+	},
+	"settings.smtp.rewrite-from": {
+		"defaultMessage": "Send as"
+	},
+	"settings.smtp.rewrite-from.placeholder": {
+		"defaultMessage": "Leave empty to keep the sender"
+	},
+	"settings.smtp.rewrites": {
+		"defaultMessage": "sends as {address}, replies to the original sender"
+	},
+	"settings.smtp.rewrites-keep": {
+		"defaultMessage": "sends as {address}"
+	},
+	"settings.smtp.routes": {
+		"defaultMessage": "Routes"
+	},
+	"settings.smtp.routes.help": {
+		"defaultMessage": "The most specific match wins: an exact address, then @domain, then *. With \"Send as\" set, the sender is replaced by that address (for servers that only accept their own); the original goes into Reply-To and X-Original-From."
+	},
+	"settings.smtp.security": {
+		"defaultMessage": "Security"
+	},
+	"settings.smtp.security.none": {
+		"defaultMessage": "None"
+	},
+	"settings.smtp.security.starttls": {
+		"defaultMessage": "STARTTLS"
+	},
+	"settings.smtp.security.tls": {
+		"defaultMessage": "TLS"
+	},
+	"settings.smtp.send": {
+		"defaultMessage": "Send"
+	},
+	"settings.smtp.send-ok": {
+		"defaultMessage": "Sent via {upstream} as {from}"
+	},
+	"settings.smtp.send-test": {
+		"defaultMessage": "Send a test message"
+	},
+	"settings.smtp.subnet": {
+		"defaultMessage": "(accepting {subnet})"
+	},
+	"settings.smtp.test": {
+		"defaultMessage": "test"
+	},
+	"settings.smtp.test-from": {
+		"defaultMessage": "From"
+	},
+	"settings.smtp.test-ok": {
+		"defaultMessage": "Connected and logged in to {name}"
+	},
+	"settings.smtp.test-to": {
+		"defaultMessage": "To"
+	},
+	"settings.smtp.upstream": {
+		"defaultMessage": "Server"
+	},
+	"settings.smtp.upstreams": {
+		"defaultMessage": "Servers"
+	},
+	"settings.smtp.username": {
+		"defaultMessage": "Username"
+	},
 	"setup.preamble": {
 		"defaultMessage": "Get started by creating your admin account."
 	},

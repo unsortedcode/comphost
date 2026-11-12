@@ -244,3 +244,99 @@ export async function createTerminalTicket(
 ): Promise<{ ticket: string; expiresIn: number }> {
 	return await api.post({ url: `/stacks/${stackId}/terminal-ticket`, data: { service, shell } });
 }
+
+// --- SMTP relay ---------------------------------------------------------------
+
+export type SmtpSecurity = "none" | "starttls" | "tls";
+
+export interface SmtpUpstream {
+	id: number;
+	name: string;
+	host: string;
+	port: number;
+	security: SmtpSecurity;
+	username: string;
+	/** The password is never returned; this says whether one is stored. */
+	hasPassword: boolean;
+}
+
+export interface SmtpRoute {
+	id: number;
+	/** An address, "@domain" or "*" */
+	match: string;
+	upstreamId: number;
+	/** When set, the sender is rewritten to this address */
+	rewriteFrom: string;
+	keepReplyTo: boolean;
+}
+
+export interface SmtpRelayConfig {
+	enabled: boolean;
+	maxSizeMb: number;
+	status: {
+		listening: boolean;
+		subnet: string | null;
+		/** Whether this container answers to "smtp" on the comphost network */
+		alias: "ok" | "added" | "conflict" | "unknown";
+		error: string | null;
+	};
+	upstreams: SmtpUpstream[];
+	routes: SmtpRoute[];
+	recent: {
+		at: string;
+		from: string;
+		to: number;
+		ok: boolean;
+		upstream?: string;
+		route?: string;
+		error?: string;
+		test?: boolean;
+	}[];
+}
+
+export async function getSmtpRelay(): Promise<SmtpRelayConfig> {
+	return await api.get({ url: "/comphost/smtp" });
+}
+
+export async function setSmtpRelay(data: { enabled?: boolean; maxSizeMb?: number }): Promise<SmtpRelayConfig> {
+	return await api.post({ url: "/comphost/smtp", data });
+}
+
+/** Create (no id) or update an upstream; an empty password keeps the stored one. */
+export async function saveSmtpUpstream(
+	data: Omit<SmtpUpstream, "id" | "hasPassword"> & { id?: number; password?: string },
+): Promise<SmtpRelayConfig> {
+	const { id, ...body } = data;
+	return id
+		? await api.put({ url: `/comphost/smtp/upstreams/${id}`, data: body })
+		: await api.post({ url: "/comphost/smtp/upstreams", data: body });
+}
+
+export async function deleteSmtpUpstream(id: number): Promise<SmtpRelayConfig> {
+	return await api.del({ url: `/comphost/smtp/upstreams/${id}` });
+}
+
+export async function testSmtpUpstream(id: number): Promise<{ ok: boolean; error?: string }> {
+	return await api.post({ url: `/comphost/smtp/upstreams/${id}/test` });
+}
+
+export async function saveSmtpRoute(data: Omit<SmtpRoute, "id"> & { id?: number }): Promise<SmtpRelayConfig> {
+	const { id, ...body } = data;
+	return id
+		? await api.put({ url: `/comphost/smtp/routes/${id}`, data: body })
+		: await api.post({ url: "/comphost/smtp/routes", data: body });
+}
+
+export async function deleteSmtpRoute(id: number): Promise<SmtpRelayConfig> {
+	return await api.del({ url: `/comphost/smtp/routes/${id}` });
+}
+
+export async function sendSmtpTest(data: { from: string; to: string }): Promise<{
+	ok: boolean;
+	error?: string;
+	upstream?: string;
+	route?: string;
+	from?: string;
+}> {
+	return await api.post({ url: "/comphost/smtp/test", data });
+}

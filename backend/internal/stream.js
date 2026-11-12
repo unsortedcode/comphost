@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalSmtpRelay from "./smtp-relay.js";
 
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted", "certificate.is_deleted"];
@@ -27,6 +28,7 @@ const internalStream = {
 
 		return access
 			.can("streams:create", data)
+			.then(() => internalSmtpRelay.assertPortFree(data.incoming_port))
 			.then((/*access_data*/) => {
 				// TODO: At this point the existing ports should have been checked
 				data.owner_user_id = access.token.getUserId(1);
@@ -102,6 +104,9 @@ const internalStream = {
 
 		return access
 			.can("streams:update", thisData.id)
+			.then(
+				() => thisData.incoming_port !== undefined && internalSmtpRelay.assertPortFree(thisData.incoming_port),
+			)
 			.then((/*access_data*/) => {
 				// TODO: at this point the existing streams should have been checked
 				return internalStream.get(access, { id: thisData.id });

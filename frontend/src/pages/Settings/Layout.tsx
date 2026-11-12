@@ -6,12 +6,14 @@ import CloudflareSettings from "./CloudflareSettings";
 import DefaultSite from "./DefaultSite";
 import RegistriesSettings from "./RegistriesSettings";
 import SecureAdmin from "./SecureAdmin";
+import SmtpSettings from "./SmtpSettings";
 
 const TABS = [
 	{ key: "default-site", label: "settings.default-site", Component: DefaultSite },
 	{ key: "secure-admin", label: "settings.secure-admin", Component: SecureAdmin },
 	{ key: "cloudflare", label: "settings.cloudflare", Component: CloudflareSettings },
 	{ key: "registries", label: "settings.registries", Component: RegistriesSettings },
+	{ key: "smtp", label: "settings.smtp", Component: SmtpSettings },
 	{ key: "backup", label: "settings.backup", Component: BackupSettings },
 ];
 

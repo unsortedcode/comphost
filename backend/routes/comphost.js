@@ -3,6 +3,7 @@ import express from "express";
 import internalBackup from "../internal/backup.js";
 import internalCloudflare from "../internal/cloudflare.js";
 import internalRegistry from "../internal/registry.js";
+import internalSmtpRelay from "../internal/smtp-relay.js";
 import jwtdecode from "../lib/express/jwt-decode.js";
 import validator from "../lib/validator/index.js";
 import { debug, express as logger } from "../logger.js";
@@ -219,6 +220,120 @@ router
 			next(err);
 		}
 	});
+
+/**
+ * SMTP relay — /api/comphost/smtp. Admin settings: reads need settings:list,
+ * changes settings:update.
+ */
+const smtpHandler = (permission, schema, fn) => async (req, res, next) => {
+	try {
+		await res.locals.access.can(permission);
+		const data = schema ? await validator(schema, req.body) : {};
+		res.status(200).send(await fn(data, req));
+	} catch (err) {
+		debug(logger, `${req.method} ${req.path}: ${err}`);
+		next(err);
+	}
+};
+const idOf = (req) => Number.parseInt(req.params.id, 10);
+
+const upstreamSchema = {
+	additionalProperties: false,
+	required: ["name", "host", "port", "security"],
+	properties: {
+		name: { type: "string", minLength: 1 },
+		host: { type: "string", minLength: 1 },
+		port: { type: "integer", minimum: 1, maximum: 65535 },
+		security: { type: "string", enum: ["none", "starttls", "tls"] },
+		username: { type: "string" },
+		password: { type: "string" },
+	},
+};
+const routeSchema = {
+	additionalProperties: false,
+	required: ["match", "upstream_id"],
+	properties: {
+		match: { type: "string", minLength: 1 },
+		upstream_id: { type: "integer", minimum: 1 },
+		rewrite_from: { type: "string" },
+		keep_reply_to: { type: "boolean" },
+	},
+};
+
+router
+	.route("/smtp")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.get(smtpHandler("settings:list", null, () => internalSmtpRelay.getConfig()))
+	.post(
+		smtpHandler(
+			"settings:update",
+			{
+				additionalProperties: false,
+				properties: {
+					enabled: { type: "boolean" },
+					max_size_mb: { type: "integer", minimum: 1, maximum: 100 },
+				},
+			},
+			(data) => internalSmtpRelay.setSettings(data),
+		),
+	);
+
+router
+	.route("/smtp/upstreams")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.post(smtpHandler("settings:update", upstreamSchema, (data) => internalSmtpRelay.saveUpstream(data)));
+
+router
+	.route("/smtp/upstreams/:id")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.put(
+		smtpHandler("settings:update", upstreamSchema, (data, req) =>
+			internalSmtpRelay.saveUpstream({ ...data, id: idOf(req) }),
+		),
+	)
+	.delete(smtpHandler("settings:update", null, (_, req) => internalSmtpRelay.deleteUpstream(idOf(req))));
+
+router
+	.route("/smtp/upstreams/:id/test")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.post(smtpHandler("settings:update", null, (_, req) => internalSmtpRelay.testUpstream(idOf(req))));
+
+router
+	.route("/smtp/routes")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.post(smtpHandler("settings:update", routeSchema, (data) => internalSmtpRelay.saveRoute(data)));
+
+router
+	.route("/smtp/routes/:id")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.put(
+		smtpHandler("settings:update", routeSchema, (data, req) =>
+			internalSmtpRelay.saveRoute({ ...data, id: idOf(req) }),
+		),
+	)
+	.delete(smtpHandler("settings:update", null, (_, req) => internalSmtpRelay.deleteRoute(idOf(req))));
+
+router
+	.route("/smtp/test")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.post(
+		smtpHandler(
+			"settings:update",
+			{
+				additionalProperties: false,
+				required: ["from", "to"],
+				properties: { from: { type: "string", minLength: 3 }, to: { type: "string", minLength: 3 } },
+			},
+			(data) => internalSmtpRelay.sendTest(data),
+		),
+	);
 
 export default router;
 
