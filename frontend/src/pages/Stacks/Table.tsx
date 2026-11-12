@@ -1,4 +1,5 @@
 import {
+	IconAlertTriangle,
 	IconArrowUp,
 	IconDotsVertical,
 	IconEdit,
@@ -130,6 +131,12 @@ export default function Table({
 					return (
 						<>
 							<StackStatus status={row.status} statusText={row.statusText} />
+							{(row.driftCount ?? 0) > 0 && (
+								<Link to={`/stacks/${row.id}`} className="badge bg-red-lt ms-2">
+									<IconAlertTriangle size={11} className="me-1" />
+									<T id="drift.badge" data={{ count: row.driftCount ?? 0 }} />
+								</Link>
+							)}
 							{(row.updateCount ?? 0) > 0 && (
 								<button
 									type="button"

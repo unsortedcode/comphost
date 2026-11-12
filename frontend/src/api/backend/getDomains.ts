@@ -1,6 +1,16 @@
 import * as api from "./base";
 
 export type DomainKind = "proxy" | "redirect" | "dead" | "stream";
+export interface DriftFinding {
+	code: string;
+	message: string;
+	repaired?: boolean;
+	repairedOn?: string;
+	/** "info" findings never count as a problem */
+	level?: "info";
+	service?: string;
+}
+
 export type SslState = "none" | "valid" | "expiring" | "expired";
 
 /** One served domain (or stream port) — see backend internal/domains.js. */
@@ -20,7 +30,8 @@ export interface DomainRow {
 	stack: { id: number; name: string; service: string | null } | null;
 	/** Set when the host points at a stack container but isn't linked to it */
 	linkSuggestion: { stackId: number; stackName: string | null; service: string } | null;
-	drift: { code: string; message: string; repaired?: boolean }[];
+	/** Drift watch findings for this host; repaired ones are informational */
+	drift: DriftFinding[];
 }
 
 export async function getDomains(): Promise<DomainRow[]> {

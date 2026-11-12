@@ -10,6 +10,7 @@ import stackModel from "../models/stack.js";
 import streamModel from "../models/stream.js";
 import internalAuditLog from "./audit-log.js";
 import internalDeadHost from "./dead-host.js";
+import internalDrift from "./drift.js";
 import internalProxyHost from "./proxy-host.js";
 import internalRedirectionHost from "./redirection-host.js";
 import internalStack from "./stack.js";
@@ -150,7 +151,8 @@ const internalDomains = {
 			online: host.meta?.nginx_online !== false,
 			nginx_err: host.meta?.nginx_online === false ? host.meta?.nginx_err || null : null,
 			stack: stackRef(host),
-			drift: [],
+			// Only proxy and stream hosts can be linked, and so drift
+			drift: host.stack_id ? internalDrift.forHost(kind, host.id, host.stack_id) : [],
 		});
 
 		const rows = [];
@@ -243,7 +245,13 @@ const internalDomains = {
 			action: stackId ? "linked" : "unlinked",
 			object_type: auditType,
 			object_id: host.id,
-			meta: { stack_id: stackId || null, service: meta.comphost_service ?? null },
+			// domain_names / incoming_port are what the audit log shows for these types
+			meta: {
+				domain_names: host.domain_names,
+				incoming_port: host.incoming_port,
+				stack_id: stackId || null,
+				service: meta.comphost_service ?? null,
+			},
 		});
 		return updated;
 	},

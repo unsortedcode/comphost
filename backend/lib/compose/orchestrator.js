@@ -116,6 +116,40 @@ export const run = (args, opts = {}) =>
 	});
 
 /**
+ * Follow `docker events` for container start/die/destroy and network
+ * disconnects, calling onEvent with each parsed event. Returns the child: it
+ * exits when the daemon connection drops, so the caller restarts it. (`run`
+ * would buffer the endless output.)
+ * @param   {(event: Object) => void} onEvent
+ * @returns {import("node:child_process").ChildProcess}
+ */
+export const watchEvents = (onEvent) => {
+	const filters = ["type=container", "type=network", "event=start", "event=die", "event=destroy", "event=disconnect"];
+	const child = spawn("docker", ["events", "--format", "{{json .}}", ...filters.flatMap((f) => ["--filter", f])], {
+		env: { ...process.env, UV_USE_IO_URING: "0" },
+	});
+	let buffer = "";
+	child.stdout.on("data", (d) => {
+		buffer += d.toString();
+		let nl = buffer.indexOf("\n");
+		while (nl >= 0) {
+			const line = buffer.slice(0, nl).trim();
+			buffer = buffer.slice(nl + 1);
+			if (line) {
+				try {
+					onEvent(JSON.parse(line));
+				} catch {
+					// not an event line
+				}
+			}
+			nl = buffer.indexOf("\n");
+		}
+	});
+	child.on("error", () => null);
+	return child;
+};
+
+/**
  * Spawn a docker command and return the live ChildProcess (for streaming, e.g.
  * `compose logs -f`). Caller is responsible for killing it on client disconnect.
  * @param   {string} stackPath
@@ -438,6 +472,7 @@ export default {
 	connectContainerToNetwork,
 	inspectContainer,
 	composeContainers,
+	watchEvents,
 	checkImageUpdate,
 	discoverProjects,
 	up,

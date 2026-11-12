@@ -4,6 +4,7 @@
 import composerize from "composerize/dist/composerize.js";
 import express from "express";
 import internalBackup from "../internal/backup.js";
+import internalDrift from "../internal/drift.js";
 import internalStack from "../internal/stack.js";
 import { issueTicket } from "../lib/ws/ticket.js";
 import errs from "../lib/error.js";
@@ -83,6 +84,9 @@ router
 				},
 			);
 			const rows = await internalStack.getAll(res.locals.access, data.expand, data.query);
+			for (const row of rows) {
+				row.drift_count = internalDrift.openCount(row.id);
+			}
 			res.status(200).send(rows);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
@@ -372,6 +376,45 @@ router
 /**
  * Services list — GET /api/stacks/123/services
  */
+/**
+ * Drift watch findings for a stack — GET /api/stacks/123/drift
+ */
+router
+	.route("/:stack_id/drift")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+	.get(async (req, res, next) => {
+		try {
+			const id = parseId(req.params.stack_id);
+			await internalStack.get(res.locals.access, { id });
+			res.status(200).send(internalDrift.forStack(id));
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
+ * Accept the compose file as edited outside CompHost — POST /api/stacks/123/drift/accept
+ */
+router
+	.route("/:stack_id/drift/accept")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+	.post(async (req, res, next) => {
+		try {
+			const id = parseId(req.params.stack_id);
+			res.status(200).send(await internalDrift.accept(res.locals.access, id));
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
 router
 	.route("/:stack_id/services")
 	.options((_, res) => {

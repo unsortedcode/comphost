@@ -3,6 +3,7 @@
 import app from "./app.js";
 import { attachStackTerminal } from "./lib/ws/stack-terminal.js";
 import internalBackup from "./internal/backup.js";
+import internalDrift from "./internal/drift.js";
 import internalCertificate from "./internal/certificate.js";
 import internalRegistry from "./internal/registry.js";
 import internalIpRanges from "./internal/ip_ranges.js";
@@ -31,6 +32,7 @@ async function appStart() {
 			internalCertificate.initTimer();
 			internalIpRanges.initTimer();
 			internalBackup.initTimer();
+			internalDrift.initWatch();
 			// Re-apply stored private-registry logins to DOCKER_CONFIG.
 			internalRegistry.initSync();
 

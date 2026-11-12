@@ -67,5 +67,5 @@ export const needsAttention = (row: DomainRow) =>
 	(row.sslState === "expired" ||
 		row.sslState === "expiring" ||
 		!row.online ||
-		row.drift.length > 0 ||
+		row.drift.some((d) => !d.repaired) ||
 		!!row.linkSuggestion);

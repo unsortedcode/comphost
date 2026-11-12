@@ -452,6 +452,9 @@
 	"domains.problem.offline": {
 		"defaultMessage": "nginx rejected this host's configuration, so it isn't being served"
 	},
+	"domains.repaired": {
+		"defaultMessage": "Repaired"
+	},
 	"domains.shared-host": {
 		"defaultMessage": "{count, plural, one {+ # other domain on this host} other {+ # other domains on this host}}"
 	},
@@ -466,6 +469,33 @@
 	},
 	"domains.use-dns": {
 		"defaultMessage": "Use DNS Challenge"
+	},
+	"drift": {
+		"defaultMessage": "Drift"
+	},
+	"drift.accept": {
+		"defaultMessage": "Accept as new baseline"
+	},
+	"drift.accepted": {
+		"defaultMessage": "Compose file accepted as the new baseline"
+	},
+	"drift.badge": {
+		"defaultMessage": "{count, plural, one {# drift problem} other {# drift problems}}"
+	},
+	"drift.checked": {
+		"defaultMessage": "Last checked {date}"
+	},
+	"drift.help": {
+		"defaultMessage": "CompHost checks every two minutes, and right after containers change, whether this stack still matches what it set up. Services that drop off the comphost network are re-attached automatically; everything else is reported here."
+	},
+	"drift.none": {
+		"defaultMessage": "Nothing has drifted: the compose file and every exposed service match what CompHost set up."
+	},
+	"drift.not-checked": {
+		"defaultMessage": "Not checked yet"
+	},
+	"drift.repaired": {
+		"defaultMessage": "Repaired"
 	},
 	"email-address": {
 		"defaultMessage": "Email address"
@@ -668,11 +698,23 @@
 	"object.event.downed": {
 		"defaultMessage": "Stopped & removed {object}"
 	},
+	"object.event.drift-accepted": {
+		"defaultMessage": "Accepted outside changes to {object}"
+	},
+	"object.event.drift-detected": {
+		"defaultMessage": "Detected drift in {object}"
+	},
+	"object.event.drift-repaired": {
+		"defaultMessage": "Repaired drift in {object}"
+	},
 	"object.event.enabled": {
 		"defaultMessage": "Enabled {object}"
 	},
 	"object.event.exposed": {
 		"defaultMessage": "Exposed {object}"
+	},
+	"object.event.linked": {
+		"defaultMessage": "Linked {object} to a stack"
 	},
 	"object.event.renewed": {
 		"defaultMessage": "Renewed {object}"
@@ -682,6 +724,9 @@
 	},
 	"object.event.stopped": {
 		"defaultMessage": "Stopped {object}"
+	},
+	"object.event.unlinked": {
+		"defaultMessage": "Unlinked {object} from its stack"
 	},
 	"object.event.updated": {
 		"defaultMessage": "Updated {object}"

@@ -16,10 +16,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import { Link, useParams } from "react-router-dom";
-import { getStackServices, type StackAction } from "src/api/backend";
+import type { DriftFinding } from "src/api/backend";
+import { acceptStackDrift, getStackDrift, getStackServices, type StackAction } from "src/api/backend";
 import { HasPermission, LoadingPage } from "src/components";
+import { useLocaleState } from "src/context";
 import { useStacks } from "src/hooks";
-import { T } from "src/locale";
+import { formatDateTime, intl, T } from "src/locale";
 import {
 	showStackActionModal,
 	showStackConsoleModal,
@@ -32,8 +34,71 @@ import {
 	showStackUpdatesModal,
 } from "src/modals";
 import { MANAGE, STACKS, VIEW } from "src/modules/Permissions";
+import { showSuccess } from "src/notifications";
 import DomainsTable from "src/pages/Domains/TableWrapper";
 import { StackStatus } from "./Table";
+
+/** What the drift watch found — problems first, then repairs, then info. */
+function DriftCard({
+	findings,
+	checkedOn,
+	onAccept,
+}: {
+	findings: DriftFinding[];
+	checkedOn: string | null;
+	onAccept: () => Promise<void>;
+}) {
+	const { locale } = useLocaleState();
+	const rank = (f: DriftFinding) => (f.level === "info" ? 2 : f.repaired ? 1 : 0);
+	const sorted = [...findings].sort((a, b) => rank(a) - rank(b));
+	const color = (f: DriftFinding) => (f.level === "info" ? "text-secondary" : f.repaired ? "text-blue" : "text-red");
+	return (
+		<div className="card mb-4">
+			<div className="card-header">
+				<h3 className="card-title">
+					<T id="drift" />
+				</h3>
+				<div className="card-actions small text-secondary">
+					{checkedOn ? (
+						<T id="drift.checked" data={{ date: formatDateTime(checkedOn, locale) }} />
+					) : (
+						<T id="drift.not-checked" />
+					)}
+				</div>
+			</div>
+			<div className="card-body">
+				<p className="text-secondary small">
+					<T id="drift.help" />
+				</p>
+				{sorted.length === 0 ? (
+					<div className="text-green">
+						<T id="drift.none" />
+					</div>
+				) : (
+					<ul className="list-unstyled mb-0">
+						{sorted.map((f) => (
+							<li key={`${f.code}-${f.service ?? ""}-${f.message}`} className={`mb-2 ${color(f)}`}>
+								{f.repaired ? (
+									<span className="badge bg-blue-lt me-2">
+										<T id="drift.repaired" />
+									</span>
+								) : null}
+								{f.message}
+								{f.code === "compose-edited" ? (
+									<HasPermission section={STACKS} permission={MANAGE} hideError>
+										<button type="button" className="btn btn-sm ms-2" onClick={onAccept}>
+											<T id="drift.accept" />
+										</button>
+									</HasPermission>
+								) : null}
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+		</div>
+	);
+}
 
 /** One stack: status, services, everything it's published as, and its actions. */
 function StackDetail() {
@@ -47,6 +112,12 @@ function StackDetail() {
 		queryKey: ["stack", id, "services"],
 		queryFn: () => getStackServices(id),
 		enabled: !!stack,
+	});
+	const drift = useQuery({
+		queryKey: ["stack", id, "drift"],
+		queryFn: () => getStackDrift(id),
+		enabled: !!stack,
+		refetchInterval: 30 * 1000,
 	});
 
 	if (isLoading) return <LoadingPage />;
@@ -179,6 +250,17 @@ function StackDetail() {
 					</table>
 				</div>
 			</div>
+
+			<DriftCard
+				findings={drift.data?.findings ?? []}
+				checkedOn={drift.data?.checkedOn ?? null}
+				onAccept={async () => {
+					await acceptStackDrift(id);
+					showSuccess(intl.formatMessage({ id: "drift.accepted" }));
+					queryClient.invalidateQueries({ queryKey: ["stack", id] });
+					queryClient.invalidateQueries({ queryKey: ["stacks"] });
+				}}
+			/>
 
 			<DomainsTable stackId={id} />
 		</div>

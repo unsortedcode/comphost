@@ -51,6 +51,8 @@ export interface Stack {
 	/** Cached count from the last image-update check (null = never checked). */
 	updateCount?: number | null;
 	updateCheckedOn?: string | null;
+	/** Drift findings that need a person (list only) */
+	driftCount?: number;
 	// Expansions:
 	owner?: User;
 }

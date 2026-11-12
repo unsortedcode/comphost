@@ -40,6 +40,7 @@ export * from "./getRedirectionHosts";
 export * from "./getSetting";
 export * from "./getSettings";
 export * from "./getStack";
+export * from "./getStackDrift";
 export * from "./getStackServices";
 export * from "./getStacks";
 export * from "./getStream";

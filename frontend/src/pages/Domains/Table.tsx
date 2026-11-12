@@ -169,8 +169,9 @@ export default function Table({
 					}
 					const problems = [
 						!row.online ? intl.formatMessage({ id: "domains.problem.offline" }) : null,
-						...row.drift.map((d) => d.message),
+						...row.drift.filter((d) => !d.repaired).map((d) => d.message),
 					].filter(Boolean);
+					const repaired = row.drift.filter((d) => d.repaired);
 					if (problems.length) {
 						return (
 							<span
@@ -183,9 +184,19 @@ export default function Table({
 						);
 					}
 					return (
-						<span className="badge bg-green-lt">
-							<T id="online" />
-						</span>
+						<>
+							<span className="badge bg-green-lt">
+								<T id="online" />
+							</span>
+							{repaired.length ? (
+								<span
+									className="badge bg-blue-lt ms-1"
+									title={repaired.map((d) => d.message).join("\n")}
+								>
+									<T id="domains.repaired" />
+								</span>
+							) : null}
+						</>
 					);
 				},
 			}),

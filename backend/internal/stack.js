@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { isIP } from "node:net";
 import path from "node:path";
@@ -8,6 +9,7 @@ import stackModel from "../models/stack.js";
 import proxyHostModel from "../models/proxy_host.js";
 import streamModel from "../models/stream.js";
 import { CREATED_FILE, composeStackNameRegex, statusConvert, statusFromStates, UNKNOWN } from "../lib/compose/constants.js";
+import { clearBusy, markBusy } from "../lib/compose/busy.js";
 import orchestrator from "../lib/compose/orchestrator.js";
 import internalAccessList from "./access-list.js";
 import internalAuditLog from "./audit-log.js";
@@ -69,6 +71,14 @@ const readComposeContent = (row) => {
 	}
 	return "";
 };
+
+/**
+ * Fingerprint of compose content, stored as the drift-watch baseline whenever
+ * CompHost writes or adopts a compose file.
+ * @param   {string} content
+ * @returns {string}
+ */
+const composeHashOf = (content) => createHash("sha256").update(content).digest("hex");
 
 /**
  * Write compose content to a stack's directory (creating the dir if needed).
@@ -256,6 +266,7 @@ const internalStack = {
 						const row = {
 							name,
 							compose_file_name: data.compose_file_name || "compose.yaml",
+							compose_hash: composeHashOf(data.compose_content),
 							status: CREATED_FILE,
 							owner_user_id: access.token.getUserId(1),
 							meta: {},
@@ -316,6 +327,7 @@ const internalStack = {
 						writeComposeContent(target, previous); // roll back the bad edit
 						throw new errs.ValidationError(`Invalid compose file: ${problem}`);
 					}
+					patch.compose_hash = composeHashOf(data.compose_content);
 				}
 
 				return stackModel
@@ -512,12 +524,20 @@ const internalStack = {
 					throw new errs.ValidationError("Stack has no compose file on disk");
 				}
 
-				const result = await op(dir, onData ? { onData } : {});
+				// Containers come and go mid-op; keep the drift watch off this stack
+				// until the op and its own re-attach are done.
+				markBusy(row.id);
+				let result;
+				try {
+					result = await op(dir, onData ? { onData } : {});
 
-				// After an `up`-type op the containers may have been recreated, which
-				// drops their comphost network attachment — re-attach any exposures.
-				if (["deployed", "updated", "restarted"].includes(action)) {
-					await internalStack.reattachExposures(row).catch(() => null);
+					// After an `up`-type op the containers may have been recreated, which
+					// drops their comphost network attachment — re-attach any exposures.
+					if (["deployed", "updated", "restarted"].includes(action)) {
+						await internalStack.reattachExposures(row).catch(() => null);
+					}
+				} finally {
+					clearBusy(row.id);
 				}
 
 				// Refresh cached status from the daemon.
@@ -837,6 +857,17 @@ const internalStack = {
 
 				return proxyHost;
 			});
+	},
+
+	/**
+	 * Hash of the stack's compose file as it is on disk now, or null when the
+	 * file is missing.
+	 * @param   {Object} row
+	 * @returns {string|null}
+	 */
+	composeFileHash: (row) => {
+		const file = path.join(stackPathOf(row), row.compose_file_name);
+		return fs.existsSync(file) ? composeHashOf(fs.readFileSync(file, "utf8")) : null;
 	},
 
 	/**
@@ -1207,6 +1238,7 @@ const internalStack = {
 					name,
 					compose_file_name: path.basename(composeFile),
 					compose_dir: isDefault ? "" : dir,
+					compose_hash: composeHashOf(fs.readFileSync(composeFile, "utf8")),
 					status: UNKNOWN,
 					owner_user_id: access.token.getUserId(1),
 					meta: { adopted: true, adopted_from: dir },
