@@ -27,6 +27,13 @@ directories, time zone, DNS wait — shows them for confirmation, writes
 waits until it answers. Re-run it any time to change settings: it offers the
 current values as defaults and keeps a copy of the old `.env` as `.env.bak`.
 
+If the admin domain already points at the server, say yes to "Set up HTTPS"
+and the installer does what Settings → Secure Admin Panel would: it checks the
+domain resolves to this server, requests the Let's Encrypt certificate, creates
+the proxy host and confirms `https://<domain>` answers. Only then, if you chose
+to, it limits port 81 to the server itself. When DNS isn't ready yet it says
+so, leaves port 81 open, and you finish the step in the UI later.
+
 Unattended, with every setting from the environment or its default:
 
 ```bash

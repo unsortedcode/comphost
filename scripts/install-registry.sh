@@ -170,12 +170,17 @@ ask_settings() {
 	fi
 
 	echo >&2
-	note "Domain for the admin UI, e.g. comphost.example.com. Optional: it is only"
-	note "used to tell you the next step; HTTPS for it is set up in the UI."
+	note "Domain for the admin UI, e.g. comphost.example.com (optional). If it already"
+	note "points at this server, CompHost can get its certificate and serve the admin"
+	note "UI on https://<domain> right away."
 	while :; do
 		DOMAIN=$(ask "Admin domain (Enter to skip)" "$(current COMPHOST_DOMAIN)")
-		no_quote "$DOMAIN" && break
+		case "$DOMAIN" in *" "* | *"/"* | *":"*) warn "  Just the name, e.g. comphost.example.com." ;; *) no_quote "$DOMAIN" && break ;; esac
 	done
+	SECURE_ADMIN=0
+	if [ -n "$DOMAIN" ]; then
+		yes_no "Set up HTTPS for $DOMAIN now? (its DNS must already point here)" Y && SECURE_ADMIN=1
+	fi
 
 	echo >&2
 	note "Admin UI port. '81' is reachable from anywhere; '127.0.0.1:81' only from"
@@ -187,6 +192,13 @@ ask_settings() {
 			*) warn "  A port (81) or address:port (127.0.0.1:81)." ;;
 		esac
 	done
+	CLOSE_ADMIN_PORT=0
+	if [ "$SECURE_ADMIN" -eq 1 ]; then
+		case "$ADMIN_PORT" in
+			127.0.0.1:*) : ;;
+			*) yes_no "Once https://$DOMAIN works, limit port ${ADMIN_PORT##*:} to this server?" Y && CLOSE_ADMIN_PORT=1 ;;
+		esac
+	fi
 
 	echo >&2
 	note "Where your stacks' compose files live. It is mounted at the same path"
@@ -240,8 +252,8 @@ show_settings() {
   Image             $IMAGE
   Admin email       $ADMIN_EMAIL
   Admin password    $([ -n "$GENERATED_PASSWORD" ] && echo "(generated)" || echo "(set)")
-  Admin domain      ${DOMAIN:-—}
-  Admin UI port     $ADMIN_PORT
+  Admin domain      ${DOMAIN:-—}$([ "$SECURE_ADMIN" -eq 1 ] && echo " (HTTPS set up now)")
+  Admin UI port     $ADMIN_PORT$([ "$CLOSE_ADMIN_PORT" -eq 1 ] && echo " → 127.0.0.1:${ADMIN_PORT##*:} once HTTPS works")
   Stacks directory  $STACKS_DIR
   Data directory    $DATA_DIR
   Certificates      $LE_DIR
@@ -384,6 +396,130 @@ elif [ -n "$UFW_PORTS" ]; then
 	note "ufw left as is. To open it later: $(for p in $UFW_PORTS; do printf 'ufw allow %s; ' "$p"; done)"
 fi
 
+# --- 7. HTTPS for the admin domain ----------------------------------------------
+
+# The same two steps as Settings → Secure Admin Panel: a Let's Encrypt
+# certificate for the domain, and a proxy host sending it to the admin UI.
+ADMIN_HTTPS=""
+if [ "$SECURE_ADMIN" -eq 1 ]; then
+	echo >&2
+	info "Setting up https://$DOMAIN ..."
+
+	# Let's Encrypt has to reach this server under the domain, so check DNS first
+	# rather than spend a certificate attempt that can't succeed.
+	public_ip="$(curl -4 -fsS --max-time 8 https://api.ipify.org 2>/dev/null || curl -4 -fsS --max-time 8 https://ifconfig.me 2>/dev/null || true)"
+	# getent exits 2 for an unknown name; under pipefail that would end the script.
+	domain_ips="$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)"
+	dns_ok=1
+	if [ -z "$domain_ips" ]; then
+		warn "$DOMAIN doesn't resolve yet."
+		dns_ok=0
+	elif [ -n "$public_ip" ] && ! printf ' %s' "$domain_ips" | grep -q " $public_ip "; then
+		warn "$DOMAIN points at ${domain_ips% }, but this server is $public_ip."
+		note "(Fine if a proxy such as Cloudflare sits in front and passes plain HTTP through.)"
+		yes_no "Try anyway?" N || dns_ok=0
+	fi
+
+	if [ "$dns_ok" -eq 1 ]; then
+		# Runs inside the container with its own Node, so the server needs no extra
+		# tools; the login travels in the environment, not on a command line.
+		result="$(docker exec -i \
+			-e CH_EMAIL="$ADMIN_EMAIL" -e CH_PASSWORD="$ADMIN_PASS" -e CH_DOMAIN="$DOMAIN" \
+			comphost node --input-type=module - 2>&1 <<'NODE' || true
+const api = "http://127.0.0.1:81/api";
+const call = async (method, url, body, token) => {
+	const res = await fetch(api + url, {
+		method,
+		headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+		body: body ? JSON.stringify(body) : undefined,
+	});
+	const json = await res.json().catch(() => ({}));
+	if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+	return json;
+};
+const { CH_EMAIL: identity, CH_PASSWORD: secret, CH_DOMAIN: domain } = process.env;
+try {
+	let token;
+	try {
+		({ token } = await call("POST", "/tokens", { identity, secret }));
+	} catch {
+		throw new Error("couldn't log in with the admin email and password from .env (changed in the UI since?)");
+	}
+	const hosts = await call("GET", "/nginx/proxy-hosts", null, token);
+	if (hosts.some((h) => h.meta?.comphost_admin_panel && h.domain_names.includes(domain))) {
+		console.log("EXISTS");
+	} else {
+		const cert = await call(
+			"POST",
+			"/nginx/certificates",
+			{ provider: "letsencrypt", domain_names: [domain], meta: { key_type: "ecdsa" } },
+			token,
+		);
+		await call(
+			"POST",
+			"/nginx/proxy-hosts",
+			{
+				domain_names: [domain],
+				forward_scheme: "http",
+				forward_host: "127.0.0.1",
+				forward_port: 81,
+				certificate_id: cert.id,
+				ssl_forced: true,
+				block_exploits: true,
+				allow_websocket_upgrade: true,
+				http2_support: true,
+				access_list_id: 0,
+				caching_enabled: false,
+				hsts_enabled: false,
+				hsts_subdomains: false,
+				advanced_config: "",
+				locations: [],
+				meta: { comphost_admin_panel: true },
+			},
+			token,
+		);
+		console.log("CREATED");
+	}
+} catch (err) {
+	console.log(`FAILED ${err.message}`);
+}
+NODE
+		)"
+		case "$result" in
+			*EXISTS*) ok "https://$DOMAIN was already set up." ;;
+			*CREATED*) ok "Certificate issued and proxy host created for $DOMAIN." ;;
+			*) warn "HTTPS setup didn't complete: ${result##*FAILED }" ;;
+		esac
+
+		# Only count it once it actually answers.
+		case "$result" in
+			*EXISTS* | *CREATED*)
+				for _ in $(seq 1 10); do
+					if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "https://$DOMAIN/api/" || true)" = "200" ]; then
+						ADMIN_HTTPS="https://$DOMAIN"
+						break
+					fi
+					sleep 3
+				done
+				[ -n "$ADMIN_HTTPS" ] || warn "https://$DOMAIN doesn't answer from this server yet; check it in your browser."
+				;;
+		esac
+	fi
+	[ -n "$ADMIN_HTTPS" ] || note "You can finish this later in Settings → Secure Admin Panel."
+
+	# Close the plain admin port only once the HTTPS route is confirmed working.
+	if [ -n "$ADMIN_HTTPS" ] && [ "$CLOSE_ADMIN_PORT" -eq 1 ]; then
+		port="${ADMIN_PORT##*:}"
+		ADMIN_PORT="127.0.0.1:$port"
+		sed -i "s|^COMPHOST_ADMIN_PORT=.*|COMPHOST_ADMIN_PORT='$ADMIN_PORT'|" "$ENV_FILE"
+		(cd "$COMPHOST_DIR" && docker compose up -d >/dev/null 2>&1)
+		if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -qE "^$port/tcp +ALLOW"; then
+			ufw delete allow "$port/tcp" >/dev/null || true
+		fi
+		ok "Port $port now only answers on this server; use $ADMIN_HTTPS."
+	fi
+fi
+
 # --- done -----------------------------------------------------------------------
 
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
@@ -393,6 +529,7 @@ case "$ADMIN_PORT" in
 	127.0.0.1:*) ADMIN_URL="http://127.0.0.1:${ADMIN_PORT##*:} (from this server, e.g. ssh -L ${ADMIN_PORT##*:}:127.0.0.1:${ADMIN_PORT##*:} you@${IP:-server})" ;;
 	*) ADMIN_URL="http://${IP:-<server-ip>}:${ADMIN_PORT##*:}" ;;
 esac
+[ -n "$ADMIN_HTTPS" ] && ADMIN_URL="$ADMIN_HTTPS   (also $ADMIN_URL)"
 cat <<EOF
 
   Admin UI   $ADMIN_URL
@@ -411,7 +548,9 @@ cat <<EOF
   Change     re-run this installer
 
 EOF
-if [ -n "${DOMAIN:-}" ]; then
+if [ -n "$ADMIN_HTTPS" ]; then
+	echo "The admin UI is on $ADMIN_HTTPS."
+elif [ -n "${DOMAIN:-}" ]; then
 	echo "Next: point $DOMAIN at ${IP:-this server}, then Settings → Secure Admin Panel for HTTPS."
 else
 	echo "Next: point a domain at this server, then Settings → Secure Admin Panel for HTTPS."
