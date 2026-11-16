@@ -13,14 +13,25 @@ host's Docker socket. It exposes:
 CI publishes the image to the container registry, so a fresh machine needs
 **only Docker + a compose file** — no repo checkout, no build.
 
-**Scripted (guided):** copy `scripts/install-registry.sh` onto the box (or curl it)
-and run it. It installs Docker, logs in if the package is private, writes
-`/opt/comphost/docker-compose.yml` + `.env`, pulls the image and starts it:
+**Scripted (guided):** on a fresh Ubuntu or Debian server, run:
 
 ```bash
-sudo bash install-registry.sh
-# private registry, non-interactive login:
-sudo REGISTRY_USER=you REGISTRY_TOKEN=<pat-with-read:package> bash install-registry.sh
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/unsortedcode/comphost/develop/scripts/install-registry.sh)"
+```
+
+It installs Docker Engine and the compose plugin, then asks for each setting —
+image, first admin's email and password (Enter generates one), admin domain,
+admin UI port (`127.0.0.1:81` keeps it local), stacks, data and certificate
+directories, time zone, DNS wait — shows them for confirmation, writes
+`/opt/comphost/.env` and `docker-compose.yml`, pulls the image, starts it and
+waits until it answers. Re-run it any time to change settings: it offers the
+current values as defaults and keeps a copy of the old `.env` as `.env.bak`.
+
+Unattended, with every setting from the environment or its default:
+
+```bash
+sudo COMPHOST_YES=1 COMPHOST_ADMIN_EMAIL=you@example.com bash install-registry.sh
+# private registry: add REGISTRY_USER=you REGISTRY_TOKEN=<pat-with-read:package>
 ```
 
 **Manual:** three files, no clone:
@@ -82,7 +93,7 @@ Non-interactive installs: pre-set `COMPHOST_ADMIN_EMAIL` and
 
 ### Fast path: use the CI-built image (no local build)
 
-CI publishes the image to the container registry on every push to `main`. To deploy with a pull instead of a
+CI publishes the image to the container registry on every push to `develop`. To deploy with a pull instead of a
 build (faster, works on low-RAM boxes), set `COMPHOST_IMAGE` before running the
 installer — it lands in `.env` and the installer pulls instead of building:
 

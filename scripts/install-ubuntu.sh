@@ -23,13 +23,13 @@
 # Overridable env vars:
 #   COMPHOST_DIR        install dir            (default /opt/comphost)
 #   COMPHOST_REPO_URL   git repo to clone      (default the CompHost repo)
-#   COMPHOST_BRANCH     branch                 (default main)
+#   COMPHOST_BRANCH     branch                 (default develop)
 #   COMPHOST_STACKS_DIR stacks dir             (default /opt/stacks)
 set -euo pipefail
 
 COMPHOST_DIR="${COMPHOST_DIR:-/opt/comphost}"
 REPO_URL="${COMPHOST_REPO_URL:-https://github.com/unsortedcode/comphost.git}"
-BRANCH="${COMPHOST_BRANCH:-main}"
+BRANCH="${COMPHOST_BRANCH:-develop}"
 
 C_INFO='\033[1;36m'; C_OK='\033[1;32m'; C_WARN='\033[1;33m'; C_ERR='\033[1;31m'; C_END='\033[0m'
 info() { printf "${C_INFO}❯ %s${C_END}\n" "$*"; }

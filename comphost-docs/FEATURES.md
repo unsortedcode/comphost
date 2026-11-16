@@ -203,9 +203,11 @@ unchanged and aren't repeated here — this is what the fork adds or fixes.
 - **Production image** — self-building (the frontend is compiled in-image), with
   the Docker CLI, compose, rclone, rsync and ssh included.
 - **CI** — builds and publishes to the container registry on every push to
-  `main` (`:latest` + `:<sha>`).
-- **Registry deploy** — a build-free compose file plus `install-registry.sh`: a
-  fresh box needs only Docker.
+  `develop` (`:latest` + `:<sha>`) and on version tags (`:vX.Y.Z`).
+- **Registry deploy** — a build-free compose file plus `install-registry.sh`,
+  which installs Docker on Ubuntu or Debian, asks for every setting (current
+  values offered when re-run), writes `.env`, pulls and starts CompHost.
+  `COMPHOST_ADMIN_PORT=127.0.0.1:81` keeps the admin UI off the network.
 - **Guided Ubuntu installer** — installs Docker, prompts for the admin account,
   domain and stacks directory, writes `.env`, builds or pulls, waits for
   readiness, and optionally configures ufw.

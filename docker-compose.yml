@@ -28,7 +28,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "81:81"
+      - "${COMPHOST_ADMIN_PORT:-81}:81"
     environment:
       TZ: "${TZ:-UTC}"
       # First-run admin (only used if the database has no users yet):
