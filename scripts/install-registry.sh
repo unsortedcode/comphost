@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # CompHost — installer for a fresh Ubuntu or Debian server (no source checkout).
+# Tested on Ubuntu 24.04 and 26.04 and Debian 12.
 #
 # Installs Docker Engine + the compose plugin, asks for every CompHost setting
 # (pre-filled with sensible defaults, or with your current values when re-run),

@@ -70,7 +70,7 @@ relative volume mounts inside your stacks resolve to the wrong place on the host
 
 ## Option B — Fresh Ubuntu VPS (guided one-script install)
 
-A plain Ubuntu 22.04/24.04 server (≥2 GB RAM recommended for the in-image
+A plain Ubuntu 22.04/24.04/26.04 server (≥2 GB RAM recommended for the in-image
 frontend build). The installer installs Docker + compose, clones CompHost into
 `/opt/comphost`, walks you through initial setup (admin email/password, domain,
 stacks dir → written to `/opt/comphost/.env`), builds, starts, and waits until

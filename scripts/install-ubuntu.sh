@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CompHost — guided one-script installer for Ubuntu (22.04 / 24.04).
+# CompHost — guided one-script installer for Ubuntu (22.04 / 24.04 / 26.04).
 #
 # What it does:
 #   1. Installs Docker Engine + the compose plugin (if missing).
@@ -46,7 +46,7 @@ if [ -r /etc/os-release ]; then
 	case "${ID:-}" in
 		ubuntu) : ;;
 		debian) warn "Detected Debian — installer targets Ubuntu but should work; continuing." ;;
-		*) warn "Detected '${ID:-unknown}' — installer targets Ubuntu 22.04/24.04; continuing anyway." ;;
+		*) warn "Detected '${ID:-unknown}' — installer targets Ubuntu 22.04/24.04/26.04; continuing anyway." ;;
 	esac
 fi
 
