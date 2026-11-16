@@ -1,5 +1,6 @@
 FROM nginxproxymanager/testca AS testca
-FROM nginxproxymanager/nginx-full:certbot-node
+# Same pinned Node 22 base as docker/comphost.Dockerfile (see the note there).
+FROM nginxproxymanager/nginx-full@sha256:a07f30219fa3ed8b6427becd1828e4b1f6c810143ec3606c485be48e7239e562
 LABEL maintainer="Jamie Curnow <jc@jc21.com>"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]

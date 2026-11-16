@@ -5,7 +5,11 @@
 #
 # Build from the repo root:
 #   docker build -f docker/comphost.Dockerfile -t comphost:latest .
-ARG BASE_IMAGE=nginxproxymanager/nginx-full:certbot-node
+# Pinned by digest: the `certbot-node` tag moves, and on 2026-11-15 it moved to
+# Node 26, where @homebridge/node-pty-prebuilt-multiarch has no prebuilt binary
+# and fails to compile (Node 26 headers need C++20). This is the Node 22.23.4
+# build (tag github-pr-43-certbot-node, 2026-11-03; amd64 + arm64).
+ARG BASE_IMAGE=nginxproxymanager/nginx-full@sha256:a07f30219fa3ed8b6427becd1828e4b1f6c810143ec3606c485be48e7239e562
 
 # --- Frontend build stage: compile locales + build the React SPA ---------------
 # lang/*.json are gitignored (compiled output), so locale-compile must run first.
