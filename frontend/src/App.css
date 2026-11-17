@@ -9,6 +9,17 @@
 	color-scheme: dark;
 }
 
+/* Tabler's selection is the primary colour at 10%, which all but vanishes on
+   dark surfaces — the dark theme, and the code editors, which are dark in both
+   themes. */
+::selection {
+	background-color: color-mix(in srgb, var(--tblr-primary) 30%, transparent);
+}
+[data-bs-theme="dark"] ::selection,
+.w-tc-editor ::selection {
+	background-color: color-mix(in srgb, var(--tblr-primary) 55%, transparent);
+}
+
 .modal-backdrop {
 	--tblr-backdrop-opacity: 0.8 !important;
 }

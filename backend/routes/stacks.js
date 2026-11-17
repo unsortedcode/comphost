@@ -107,12 +107,45 @@ router
 						name: { type: "string", minLength: 1, pattern: "^[a-z0-9_-]+$" },
 						compose_content: { type: "string", minLength: 1 },
 						compose_file_name: { type: "string", minLength: 1 },
+						// Written before the compose file is checked, so a stack can
+						// arrive complete with its settings.
+						env_content: { type: "string" },
 					},
 				},
 				req.body,
 			);
 			const result = await internalStack.create(res.locals.access, payload);
 			res.status(201).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
+ * POST /api/stacks/env-check — the variables a compose file uses, checked
+ * against a .env, before anything is saved.
+ */
+router
+	.route("/env-check")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+	.post(async (req, res, next) => {
+		try {
+			const data = await validator(
+				{
+					additionalProperties: false,
+					required: ["compose_content"],
+					properties: {
+						compose_content: { type: "string" },
+						env_content: { type: "string" },
+					},
+				},
+				req.body,
+			);
+			res.status(200).send(await internalStack.checkEnv(res.locals.access, data));
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
 			next(err);

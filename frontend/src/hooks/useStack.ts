@@ -36,7 +36,8 @@ const useStack = (id: number | "new", options = {}) => {
 const useSetStack = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (values: Partial<Stack>) => (values.id ? updateStack(values) : createStack(values)),
+		mutationFn: (values: Partial<Stack> & { envContent?: string }) =>
+			values.id ? updateStack(values) : createStack(values),
 		onSuccess: async (result: Stack) => {
 			queryClient.invalidateQueries({ queryKey: ["stack", result.id] });
 			queryClient.invalidateQueries({ queryKey: ["stacks"] });

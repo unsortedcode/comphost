@@ -1217,11 +1217,26 @@
 	"stack.console.reconnect": {
 		"defaultMessage": "Reconnect"
 	},
+	"stack.env.check.optional": {
+		"defaultMessage": "Used without a value (compose falls back to the default or empty): {names}"
+	},
+	"stack.env.check.required": {
+		"defaultMessage": "Required, no value yet: {names}. The stack is saved without them, but won't deploy until they're set."
+	},
+	"stack.env.file": {
+		"defaultMessage": ".env (optional)"
+	},
+	"stack.env.file.help": {
+		"defaultMessage": "Settings the compose file reads, one NAME=value per line. Written next to the compose file before it's checked."
+	},
 	"stack.env.help": {
 		"defaultMessage": "Values here are written to this stack's .env file, which compose reads when it deploys. Variables your compose file references are listed automatically."
 	},
 	"stack.env.missing": {
 		"defaultMessage": "referenced by compose but not set"
+	},
+	"stack.env.missing-required": {
+		"defaultMessage": "required — deploy fails without it"
 	},
 	"stack.env.missing-warning": {
 		"defaultMessage": "{count} variable(s) referenced by the compose file are not set in .env — compose will fall back to its inline default (or empty)."
@@ -1232,11 +1247,17 @@
 	"stack.env.redeploy-hint": {
 		"defaultMessage": "Redeploy the stack for changes to take effect."
 	},
+	"stack.env.saved-missing": {
+		"defaultMessage": "Stack saved. Before deploying, set {names} in its .env."
+	},
 	"stack.env.title": {
 		"defaultMessage": "Environment variables"
 	},
 	"stack.env.unused": {
 		"defaultMessage": "unused"
+	},
+	"stack.env.upload": {
+		"defaultMessage": "Upload .env"
 	},
 	"stack.env.value": {
 		"defaultMessage": "Value"

@@ -111,8 +111,8 @@ const StackEnvModal = EasyModal.create(({ id, visible, remove, resolve }: Props)
 											</span>
 										)}
 										{v.missing && (
-											<div className="text-warning small">
-												<T id="stack.env.missing" />
+											<div className={`small ${v.required ? "text-danger" : "text-warning"}`}>
+												<T id={v.required ? "stack.env.missing-required" : "stack.env.missing"} />
 												{v.defaultValue ? ` (default: ${v.defaultValue})` : ""}
 											</div>
 										)}

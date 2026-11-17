@@ -73,6 +73,89 @@ const readComposeContent = (row) => {
 };
 
 /**
+ * Values a .env file sets.
+ * @param   {string} content
+ * @returns {Object<string, string>}
+ */
+const parseEnvContent = (content) => {
+	const set = {};
+	for (const line of String(content || "").split(/\r?\n/)) {
+		const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/);
+		if (m) set[m[1]] = m[2];
+	}
+	return set;
+};
+
+/**
+ * Variables a RAW compose file references, in every form compose interpolates:
+ * $VAR, ${VAR}, ${VAR-default}, ${VAR:-default}, ${VAR?msg}, ${VAR:?msg},
+ * ${VAR+alt}, ${VAR:+alt}. `$$` is a literal dollar, not a variable. Read the
+ * raw file, not `compose config`, which has already substituted them.
+ * @param   {string} raw
+ * @returns {Map<string, {defaultValue: string, required: boolean, nonEmpty: boolean}>}
+ */
+const referencedVariables = (raw) => {
+	const vars = new Map();
+	const text = String(raw || "").replace(/\$\$/g, "");
+	for (const m of text.matchAll(/\$\{([A-Za-z_][A-Za-z0-9_]*)(?:(:?)([-?+=])([^}]*))?\}/g)) {
+		const [, name, colon, op, arg] = m;
+		const prev = vars.get(name) || { defaultValue: "", required: false, nonEmpty: false };
+		vars.set(name, {
+			defaultValue: op === "-" || op === "=" ? arg : prev.defaultValue,
+			required: prev.required || op === "?",
+			// ${VAR:?} also rejects an empty value; ${VAR?} only needs it set
+			nonEmpty: prev.nonEmpty || (op === "?" && colon === ":"),
+		});
+	}
+	for (const m of text.matchAll(/\$([A-Za-z_][A-Za-z0-9_]*)/g)) {
+		if (!vars.has(m[1])) vars.set(m[1], { defaultValue: "", required: false, nonEmpty: false });
+	}
+	return vars;
+};
+
+/**
+ * What the .env editor and the pre-save check show: every variable the compose
+ * file uses or .env sets, its value and default, and whether it's missing. A
+ * missing *required* variable (${VAR:?…}) makes deploy fail.
+ * @param   {string} raw         compose file content
+ * @param   {string} envContent  .env content
+ * @returns {Array<Object>}
+ */
+const envVariables = (raw, envContent) => {
+	const set = parseEnvContent(envContent);
+	const referenced = referencedVariables(raw);
+	const names = new Set([...referenced.keys(), ...Object.keys(set)]);
+	return [...names].sort().map((name) => {
+		const ref = referenced.get(name);
+		return {
+			name,
+			value: set[name] ?? "",
+			usedInCompose: !!ref,
+			defaultValue: ref?.defaultValue ?? "",
+			required: !!ref?.required,
+			missing: !!ref && (!(name in set) || (ref.nonEmpty && set[name] === "")),
+		};
+	});
+};
+
+/** Names of required variables that have no value — deploy would fail on these. */
+const missingRequired = (raw, envContent) =>
+	envVariables(raw, envContent)
+		.filter((v) => v.required && v.missing)
+		.map((v) => v.name);
+
+const writeEnvContent = (row, content) => {
+	const dir = stackPathOf(row);
+	fs.mkdirSync(dir, { recursive: true });
+	fs.writeFileSync(path.join(dir, ".env"), content ?? "", "utf8");
+};
+
+const readEnvContent = (row) => {
+	const file = path.join(stackPathOf(row), ".env");
+	return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+};
+
+/**
  * Fingerprint of compose content, stored as the drift-watch baseline whenever
  * CompHost writes or adopts a compose file.
  * @param   {string} content
@@ -222,9 +305,13 @@ const resolveStatus = (row, statuses, states) => {
  * @returns {Promise<string|null>}
  */
 const validateComposeDir = async (dir) => {
-	const res = await orchestrator.run(orchestrator.getComposeOptions(dir, orchestrator.getStacksDir(), "config", "-q"), {
-		cwd: dir,
-	});
+	// --no-interpolate: check the file's structure without needing its variables.
+	// A stack is often created before its .env exists; a missing required value
+	// is reported separately (missingRequired) instead of refusing the file.
+	const res = await orchestrator.run(
+		orchestrator.getComposeOptions(dir, orchestrator.getStacksDir(), "config", "-q", "--no-interpolate"),
+		{ cwd: dir },
+	);
 	if (res.exitCode === 0) {
 		return null;
 	}
@@ -276,6 +363,9 @@ const internalStack = {
 						// then let compose itself validate it — a typo should fail here
 						// with a real parser message, not later at deploy time.
 						writeComposeContent(row, data.compose_content);
+						if (typeof data.env_content === "string") {
+							writeEnvContent(row, data.env_content);
+						}
 						const problem = await validateComposeDir(stackPathOf(row));
 						if (problem) {
 							fs.rmSync(stackPathOf(row), { recursive: true, force: true });
@@ -293,8 +383,28 @@ const internalStack = {
 						object_id: row.id,
 						meta: _.omit(row, omissions()),
 					})
-					.then(() => internalStack.get(access, { id: row.id }));
+					.then(() => internalStack.get(access, { id: row.id }))
+					.then((stack) => ({
+						...stack,
+						// Saved anyway; the UI says these need a value before deploying.
+						missing_required: missingRequired(stack.compose_content, readEnvContent(stack)),
+					}));
 			});
+	},
+
+	/**
+	 * Check a compose file and .env before saving: which variables it uses,
+	 * which are set, and which required ones are missing. Nothing is written.
+	 * @param   {Access} access
+	 * @param   {Object} data  { compose_content, env_content? }
+	 * @returns {Promise<{variables: Array<Object>, missing_required: string[]}>}
+	 */
+	checkEnv: async (access, data) => {
+		await access.can("stacks:list");
+		return {
+			variables: envVariables(data.compose_content, data.env_content || ""),
+			missing_required: missingRequired(data.compose_content, data.env_content || ""),
+		};
 	},
 
 	/**
@@ -931,38 +1041,8 @@ const internalStack = {
 			if (!row?.id) {
 				throw new errs.ItemNotFoundError(id);
 			}
-			const envFile = path.join(stackPathOf(row), ".env");
-			const content = fs.existsSync(envFile) ? fs.readFileSync(envFile, "utf8") : "";
-
-			// Values currently set in .env.
-			const set = {};
-			for (const line of content.split(/\r?\n/)) {
-				const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/);
-				if (m) set[m[1]] = m[2];
-			}
-
-			// Variables the RAW compose references — ${VAR}, ${VAR:-default}, $VAR.
-			// (Read raw, not `compose config`, which has already interpolated them.)
-			const raw = readComposeContent(row);
-			const referenced = new Map();
-			for (const m of raw.matchAll(/\$\{([A-Za-z_][A-Za-z0-9_]*)(?::?-([^}]*))?\}/g)) {
-				referenced.set(m[1], m[2] ?? "");
-			}
-			for (const m of raw.matchAll(/\$([A-Za-z_][A-Za-z0-9_]*)/g)) {
-				if (!referenced.has(m[1])) referenced.set(m[1], "");
-			}
-
-			const names = new Set([...referenced.keys(), ...Object.keys(set)]);
-			const variables = [...names].sort().map((name) => ({
-				name,
-				value: set[name] ?? "",
-				// Referenced by compose but absent from .env → compose will use the
-				// default (or empty), which is usually what the user wants flagged.
-				usedInCompose: referenced.has(name),
-				defaultValue: referenced.get(name) ?? "",
-				missing: referenced.has(name) && !(name in set),
-			}));
-			return { content, variables };
+			const content = readEnvContent(row);
+			return { content, variables: envVariables(readComposeContent(row), content) };
 		});
 	},
 
@@ -995,9 +1075,7 @@ const internalStack = {
 					}
 					content = `${vars.map((v) => `${v.name}=${v.value ?? ""}`).join("\n")}\n`;
 				}
-				const dir = stackPathOf(row);
-				fs.mkdirSync(dir, { recursive: true });
-				fs.writeFileSync(path.join(dir, ".env"), content ?? "", "utf8");
+				writeEnvContent(row, content);
 				await internalAuditLog.add(access, {
 					action: "updated",
 					object_type: "stack",

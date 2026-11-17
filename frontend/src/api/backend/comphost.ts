@@ -182,6 +182,16 @@ export interface StackEnvVariable {
 	defaultValue: string;
 	/** Compose wants it but .env doesn't define it. */
 	missing: boolean;
+	/** ${VAR:?…} / ${VAR?…}: deploy fails while it's missing. */
+	required: boolean;
+}
+
+/** Which variables a compose file uses, checked against a .env — nothing is saved. */
+export async function checkStackEnv(
+	composeContent: string,
+	envContent: string,
+): Promise<{ variables: StackEnvVariable[]; missingRequired: string[] }> {
+	return await api.post({ url: "/stacks/env-check", data: { composeContent, envContent } });
 }
 
 export async function getStackEnv(stackId: number): Promise<{ content: string; variables: StackEnvVariable[] }> {

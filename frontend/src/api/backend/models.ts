@@ -53,6 +53,8 @@ export interface Stack {
 	updateCheckedOn?: string | null;
 	/** Drift findings that need a person (list only) */
 	driftCount?: number;
+	/** On create: required variables still without a value in .env */
+	missingRequired?: string[];
 	// Expansions:
 	owner?: User;
 }
